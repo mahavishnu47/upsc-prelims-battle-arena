@@ -685,13 +685,41 @@ main.app-content {
 @media (max-width: 768px) {
   .desktop-nav { display: none; }
   .mobile-bottom-nav { display: flex; }
+  .desktop-only-text { display: none !important; }
   
   header.app-header {
-    padding: 10px 14px;
+    padding: 8px 12px;
+    gap: 8px;
   }
   
   .logo-text {
-    font-size: 1rem;
+    font-size: 0.92rem;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1.1rem;
+  }
+
+  #header-user-widget {
+    flex-shrink: 0;
+  }
+
+  .user-badge {
+    padding: 3px 6px;
+    gap: 4px;
+  }
+
+  .avatar-circle {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+  }
+
+  .streak-badge {
+    padding: 4px 8px;
+    font-size: 0.8rem;
   }
   
   main.app-content {

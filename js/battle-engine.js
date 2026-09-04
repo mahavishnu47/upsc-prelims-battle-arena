@@ -59,38 +59,25 @@ export const BattleEngine = {
   },
 
   /**
-   * Calculate score for an answered question
+   * Calculate score for an answered question (Standard UPSC Prelims: +2.0 for correct, -0.66 for wrong)
    * @param {boolean} isCorrect - whether option matched
-   * @param {number} timeLeftSec - seconds remaining on timer
-   * @param {number} totalTimeSec - total seconds allocated
-   * @param {number} currentStreak - consecutive correct answers in this battle
    */
-  calculateScore(isCorrect, timeLeftSec, totalTimeSec, currentStreak = 0) {
+  calculateScore(isCorrect) {
     if (!isCorrect) {
       return {
-        points: -33, // Always-on negative marking
+        points: -0.66,
         base: 0,
         speedBonus: 0,
         streakBonus: 0,
-        penalty: -33
+        penalty: -0.66
       };
     }
 
-    const base = 100;
-    // Speed bonus: up to +50 points
-    const timeFraction = Math.max(0, Math.min(1, timeLeftSec / totalTimeSec));
-    const speedBonus = Math.round(50 * timeFraction);
-
-    // Streak multiplier: +10% per consecutive correct answer, up to +50%
-    const streakMultiplier = Math.min(0.5, currentStreak * 0.10);
-    const streakBonus = Math.round(base * streakMultiplier);
-
-    const total = base + speedBonus + streakBonus;
     return {
-      points: total,
-      base,
-      speedBonus,
-      streakBonus,
+      points: 2.0,
+      base: 2.0,
+      speedBonus: 0,
+      streakBonus: 0,
       penalty: 0
     };
   }

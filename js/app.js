@@ -54,17 +54,17 @@ function updateNavigation(activeRoute) {
     StreakSystem.updateDailyStreak(currentUser);
     const stats = currentUser.stats || {};
     headerUserWidget.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <button id="btn-cloud-setup" class="btn btn-glass btn-sm" title="Cloud Database Sync Settings" style="font-size: 0.8rem; padding: 6px 10px;">
-          <span>${isCloudConnected ? '🟢' : '☁️'}</span><span class="nav-text">${isCloudConnected ? 'Cloud Active' : 'Cloud Sync'}</span>
+      <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+        <button id="btn-cloud-setup" class="btn btn-glass btn-sm" title="Cloud Database Sync Settings" style="font-size: 0.8rem; padding: 6px 8px;">
+          <span>${isCloudConnected ? '🟢' : '☁️'}</span><span class="desktop-only-text" style="margin-left: 4px;">${isCloudConnected ? 'Cloud Active' : 'Cloud Sync'}</span>
         </button>
-        <div class="streak-badge">
+        <div class="streak-badge" title="Daily Streak">
           <span class="flame-icon">🔥</span>
           <span>${stats.dailyStreak || 1}d</span>
         </div>
-        <div class="user-badge" id="user-profile-toggle" title="View Profile">
+        <div class="user-badge" id="user-profile-toggle" title="View Profile" style="cursor: pointer; flex-shrink: 0;">
           <div class="avatar-circle">${currentUser.avatar || '🎯'}</div>
-          <span style="font-weight: 600; font-size: 0.9rem;">${currentUser.name}</span>
+          <span class="desktop-only-text" style="font-weight: 600; font-size: 0.88rem; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${currentUser.name}</span>
         </div>
       </div>
     `;
@@ -80,7 +80,7 @@ function updateNavigation(activeRoute) {
     });
   } else {
     headerUserWidget.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
         <button id="btn-cloud-setup" class="btn btn-glass btn-sm" title="Cloud Database Sync Settings">☁️</button>
         <a href="#auth" class="btn btn-primary btn-sm">Sign In</a>
       </div>
@@ -370,10 +370,10 @@ async function renderDashboardView() {
       </div>
 
       <div class="glass-card" style="padding: 20px;">
-        <div style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Arena Points</div>
+        <div style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Total Marks</div>
         <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 6px;">
-          <span style="font-size: 2.2rem; font-weight: 800; color: #818cf8;">${(stats.totalPoints || 0).toLocaleString()}</span>
-          <span style="color: var(--text-secondary); font-size: 0.9rem;">pts 🏆</span>
+          <span style="font-size: 2.2rem; font-weight: 800; color: #818cf8;">${Number(stats.totalPoints || 0).toFixed(2)}</span>
+          <span style="color: var(--text-secondary); font-size: 0.9rem;">marks 🏆</span>
         </div>
         <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">${stats.battlesWon || 0} Battles Won</div>
       </div>
@@ -393,7 +393,7 @@ async function renderDashboardView() {
           <span style="font-size: 2.2rem; font-weight: 800; color: #f472b6;">${progress.overallAccuracy}%</span>
           <span style="color: var(--text-secondary); font-size: 0.9rem;">🎯</span>
         </div>
-        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">-33 pts penalty applied</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">-0.66 penalty applied</div>
       </div>
     </div>
 
@@ -450,7 +450,7 @@ async function renderDashboardView() {
                   <div style="font-weight: 700; color: ${b.won ? '#34d399' : '#fcd34d'}; font-size: 0.95rem;">
                     ${b.won ? '🏆 1st Place' : `Rank #${b.rank || 2}`}
                   </div>
-                  <div style="font-size: 0.8rem; color: var(--text-secondary);">${b.score} pts</div>
+                  <div style="font-size: 0.8rem; color: var(--text-secondary);">${Number(b.score || 0).toFixed(2)} marks</div>
                 </div>
               </div>
             `).join('')}
@@ -501,37 +501,23 @@ async function renderCreateBattleView() {
             </div>
           </div>
 
-          <div class="grid-2">
-            <!-- Question Count -->
-            <div class="form-group">
-              <label class="form-label">Number of Questions</label>
-              <select id="battle-count-select" class="form-select">
-                <option value="5">5 Questions (Quick Clash - ~4 mins)</option>
-                <option value="10" selected>10 Questions (Standard Battle - ~8 mins)</option>
-                <option value="15">15 Questions (Deep Drill - ~12 mins)</option>
-                <option value="25">25 Questions (Prelims Mini-Mock - ~20 mins)</option>
-              </select>
-            </div>
-
-            <!-- Time Per Question -->
-            <div class="form-group">
-              <label class="form-label">Time Per Question</label>
-              <select id="battle-time-select" class="form-select">
-                <option value="30">30 Seconds (Lightning Speed)</option>
-                <option value="45" selected>45 Seconds (Standard CSE)</option>
-                <option value="60">60 Seconds (Analytical & Statements)</option>
-                <option value="90">90 Seconds (Relaxed)</option>
-              </select>
-            </div>
+          <div class="form-group">
+            <label class="form-label">Number of Questions</label>
+            <select id="battle-count-select" class="form-select">
+              <option value="5">5 Questions (Quick Clash)</option>
+              <option value="10" selected>10 Questions (Standard Battle)</option>
+              <option value="15">15 Questions (Deep Drill)</option>
+              <option value="25">25 Questions (Prelims Mini-Mock)</option>
+            </select>
           </div>
 
           <!-- UPSC Simulation Rules Banner -->
           <div class="glass-panel" style="padding: 14px 18px; margin: 16px 0; border-left: 4px solid var(--accent-gold);">
-            <div style="font-weight: 700; color: #fcd34d; font-size: 0.9rem; margin-bottom: 2px;">⚡ UPSC Simulation Rules Applied:</div>
+            <div style="font-weight: 700; color: #fcd34d; font-size: 0.9rem; margin-bottom: 2px;">⚡ Official UPSC Prelims Marking Scheme:</div>
             <ul style="font-size: 0.82rem; color: var(--text-secondary); margin-left: 18px; line-height: 1.5;">
-              <li><strong>+100 pts</strong> Base for Correct answer + up to <strong>+50 pts</strong> speed bonus</li>
-              <li><strong>-33 pts Negative Marking ALWAYS active</strong> for wrong answers (-1/3rd penalty)</li>
-              <li>0 pts for skipped / timed out questions</li>
+              <li><strong>+2.0 Marks</strong> for each Correct Answer</li>
+              <li><strong>-0.66 Marks (-1/3rd penalty)</strong> for Wrong Answers</li>
+              <li>Questions advance <strong>independently</strong> for each friend at their own speed (untimed)</li>
             </ul>
           </div>
 
@@ -581,7 +567,6 @@ async function renderCreateBattleView() {
 
     const subject = subjectSelect.value;
     const count = parseInt(document.getElementById('battle-count-select').value, 10);
-    const timePerQ = parseInt(document.getElementById('battle-time-select').value, 10);
     const prioritizeUnattempted = document.getElementById('battle-unattempted-toggle').checked;
 
     const selectedMts = Array.from(document.querySelectorAll('.mt-checkbox:checked')).map(cb => cb.value);
@@ -606,7 +591,6 @@ async function renderCreateBattleView() {
       hostName: user.name,
       subject: subject === 'all' ? 'All Subjects' : subject,
       questionCount: questions.length,
-      timePerQuestion: timePerQ,
       status: 'waiting', // waiting -> starting -> active -> finished
       createdAt: Date.now(),
       questions,
@@ -681,7 +665,7 @@ function renderLobbyView(params) {
             </div>
             <div class="text-right">
               <div style="font-weight: 700; color: var(--primary);">${room.questionCount} Questions</div>
-              <div style="font-size: 0.8rem; color: var(--text-muted);">${room.timePerQuestion}s per question</div>
+              <div style="font-size: 0.8rem; color: #34d399; font-weight: 600;">+2.0 / -0.66 Marking</div>
             </div>
           </div>
 
@@ -758,9 +742,9 @@ function renderLobbyView(params) {
 }
 
 // ==========================================
+// ==========================================
 // 6. View: Live Battle Quiz Engine
 // ==========================================
-let battleTimerInterval = null;
 let battleUnsub = null;
 
 function renderBattleView(params) {
@@ -768,23 +752,270 @@ function renderBattleView(params) {
   const user = Auth.getCurrentUser();
   if (!user) return router.navigate('#auth');
 
-  if (battleUnsub) battleUnsub();
+  if (battleUnsub) {
+    battleUnsub();
+    battleUnsub = null;
+  }
 
   let localCurrentQIndex = 0;
   let localAnswers = {};
   let localScore = 0;
   let currentStreak = 0;
-  let timeLeft = 45;
-  let totalQTime = 45;
-  let selectedOptionForQ = null;
   let isAnswerLocked = false;
+  let hasInitializedQuestion = false;
+  let currentRoomCache = null;
 
+  function formatMarks(score) {
+    const num = Number(score || 0);
+    return (num >= 0 ? '+' : '') + num.toFixed(2);
+  }
+
+  function updateOpponentsBar(room) {
+    const oppContainer = document.getElementById('battle-opponents-bar');
+    if (!oppContainer || !room || !room.players) return;
+
+    const otherPlayers = Object.values(room.players).filter(p => p.id !== user.id);
+    if (otherPlayers.length === 0) {
+      oppContainer.innerHTML = '<span style="font-size: 0.75rem; color: var(--text-muted);">Solo Mode</span>';
+      return;
+    }
+
+    oppContainer.innerHTML = otherPlayers.map(op => {
+      const opScore = Number(op.score || 0);
+      const isFin = op.finished || (op.currentQuestionIndex || 0) >= (room.questions?.length || 10);
+      return `
+        <div style="text-align: center; min-width: 52px;" title="${op.name}: Q${(op.currentQuestionIndex || 0) + 1}">
+          <div style="font-size: 1.25rem;">${op.avatar || '🎯'}</div>
+          <div style="font-size: 0.75rem; font-weight: 800; color: ${opScore >= 0 ? '#34d399' : '#f87171'};">
+            ${formatMarks(opScore)}
+          </div>
+          <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">
+            ${isFin ? '✅ Done' : `Q${(op.currentQuestionIndex || 0) + 1}/${room.questions?.length || 10}`}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderWaitingScreen(room) {
+    const playersList = Object.values(room?.players || {});
+    const pendingCount = playersList.filter(p => !p.finished).length;
+
+    mainView.innerHTML = `
+      <div class="text-center glass-card" style="max-width: 520px; margin: 50px auto; padding: 40px 24px;">
+        <div style="font-size: 3.5rem; margin-bottom: 12px; animation: pulse-fire 1.5s infinite alternate;">⏳</div>
+        <h2 class="gradient-gold" style="font-size: 1.8rem; margin-bottom: 8px;">Quiz Completed!</h2>
+        <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 24px;">
+          ${pendingCount > 0 ? `Waiting for ${pendingCount} friend(s) to finish their questions...` : `All players have finished! Calculating final scores...`}
+        </p>
+
+        <div style="background: rgba(0,0,0,0.25); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px;">
+          <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">YOUR FINAL SCORE</div>
+          <div style="font-size: 2.2rem; font-weight: 900; color: ${localScore >= 0 ? '#34d399' : '#f87171'};">
+            ${formatMarks(localScore)} Marks
+          </div>
+        </div>
+
+        <div id="waiting-players-list" style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
+          ${playersList.map(p => `
+            <div class="glass-panel" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.3rem;">${p.avatar || '🎯'}</span>
+                <div>
+                  <span style="font-weight: 600;">${p.name} ${p.id === user.id ? '(You)' : ''}</span>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">${formatMarks(p.score)} marks</div>
+                </div>
+              </div>
+              <div>
+                ${p.finished ? '<span class="badge badge-emerald">Finished ✅</span>' : `<span class="badge badge-gold">Q ${(p.currentQuestionIndex || 0) + 1}/${room.questions?.length || 10}</span>`}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCurrentQuestion() {
+    if (!currentRoomCache) return;
+    const questions = currentRoomCache.questions || [];
+    if (localCurrentQIndex >= questions.length) {
+      renderWaitingScreen(currentRoomCache);
+      return;
+    }
+
+    const currentQ = questions[localCurrentQIndex];
+    if (!currentQ) return;
+
+    mainView.innerHTML = `
+      <div style="max-width: 840px; margin: 0 auto;">
+        <!-- Battle Top Header Bar: Score, Question Index, Streak & Live Opponents -->
+        <div class="glass-card" style="padding: 16px 20px; margin-bottom: 18px;">
+          <div class="flex-between" style="flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span class="badge badge-primary">Q ${localCurrentQIndex + 1} of ${questions.length}</span>
+              <span class="badge badge-gold">⚡ ${currentQ.subject}</span>
+              ${currentStreak > 1 ? `<span class="streak-badge"><span class="flame-icon">🔥</span> ${currentStreak}x Streak</span>` : ''}
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <div style="text-align: right;">
+                <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">YOUR SCORE</div>
+                <div id="battle-my-score" style="font-size: 1.3rem; font-weight: 800; color: ${localScore >= 0 ? '#34d399' : '#f87171'};">
+                  ${formatMarks(localScore)}
+                </div>
+              </div>
+
+              <!-- Opponents Mini Progress Avatars -->
+              <div id="battle-opponents-bar" style="display: flex; gap: 10px; border-left: 1px solid var(--border-subtle); padding-left: 14px; align-items: center;">
+                <!-- Updated live via updateOpponentsBar -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Question Progress Bar -->
+          <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-top: 14px; overflow: hidden;">
+            <div style="width: ${((localCurrentQIndex + 1) / questions.length) * 100}%; height: 100%; background: var(--primary); transition: width 0.3s ease;"></div>
+          </div>
+        </div>
+
+        <!-- Question Card -->
+        <div class="glass-card" style="padding: 28px 24px; margin-bottom: 20px;">
+          <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;">
+            <span class="badge badge-emerald">${currentQ.exam || 'UPSC CSE'} ${currentQ.year || ''}</span>
+            <span class="badge badge-primary">${currentQ.microtheme || 'Microtheme'}</span>
+            <span class="badge badge-gold" style="font-size: 0.75rem;">+2.0 / -0.66</span>
+          </div>
+
+          <h3 style="font-size: 1.12rem; font-weight: 600; line-height: 1.6; margin-bottom: 24px; color: var(--text-primary); white-space: pre-wrap;">
+${currentQ.question}
+          </h3>
+
+          <!-- MCQ Options A, B, C, D -->
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            ${['A', 'B', 'C', 'D'].map(opt => {
+              const optText = currentQ[`option_${opt.toLowerCase()}`];
+              if (!optText) return '';
+              return `
+                <div class="option-card" data-opt="${opt}" id="opt-${opt}">
+                  <div class="option-letter">${opt}</div>
+                  <div class="option-text">${optText}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+
+    updateOpponentsBar(currentRoomCache);
+
+    // Attach click listeners to options
+    document.querySelectorAll('.option-card').forEach(card => {
+      card.addEventListener('click', () => {
+        if (isAnswerLocked) return;
+        isAnswerLocked = true;
+
+        const selectedOpt = card.getAttribute('data-opt');
+        handleLocalQuestionAnswer(currentQ, selectedOpt);
+      });
+    });
+  }
+
+  async function handleLocalQuestionAnswer(currentQ, selectedOpt) {
+    const isCorrect = selectedOpt === currentQ.correct_answer;
+    const scoreResult = BattleEngine.calculateScore(isCorrect);
+    const scoreDelta = scoreResult.points;
+
+    localScore = Math.round((localScore + scoreDelta) * 100) / 100;
+
+    if (isCorrect) {
+      sounds.correct();
+      currentStreak++;
+      document.getElementById(`opt-${selectedOpt}`)?.classList.add('correct');
+      showToast(`+2.0 Marks! Correct answer (${selectedOpt})`, 'success', 1200);
+    } else {
+      sounds.wrong();
+      currentStreak = 0;
+      if (selectedOpt) {
+        document.getElementById(`opt-${selectedOpt}`)?.classList.add('wrong');
+      }
+      document.getElementById(`opt-${currentQ.correct_answer}`)?.classList.add('correct');
+      showToast(`-0.66 Marks! Correct was (${currentQ.correct_answer})`, 'error', 1500);
+
+      // Save to Mistake Notebook
+      LocalDB.addMistake(user.id, {
+        questionId: currentQ.id,
+        question: currentQ.question,
+        option_a: currentQ.option_a,
+        option_b: currentQ.option_b,
+        option_c: currentQ.option_c,
+        option_d: currentQ.option_d,
+        selectedOption: selectedOpt,
+        correctAnswer: currentQ.correct_answer,
+        explanation: currentQ.explanation,
+        subject: currentQ.subject,
+        microtheme: currentQ.microtheme,
+        year: currentQ.year
+      });
+    }
+
+    localAnswers[localCurrentQIndex] = {
+      selectedOption: selectedOpt,
+      isCorrect,
+      pointsEarned: scoreDelta,
+      correctAnswer: currentQ.correct_answer,
+      explanation: currentQ.explanation
+    };
+
+    // Update local score indicator
+    const scoreEl = document.getElementById('battle-my-score');
+    if (scoreEl) {
+      scoreEl.innerText = formatMarks(localScore);
+      scoreEl.style.color = localScore >= 0 ? '#34d399' : '#f87171';
+    }
+
+    // Submit answer to Firebase in background
+    BattleService.submitAnswer(
+      battleId,
+      user.id,
+      localCurrentQIndex,
+      selectedOpt,
+      isCorrect,
+      scoreDelta,
+      0
+    ).catch(err => console.warn("Submit answer error:", err));
+
+    // Move to next question independently after 850ms
+    setTimeout(() => {
+      localCurrentQIndex++;
+      isAnswerLocked = false;
+
+      const questions = currentRoomCache?.questions || [];
+      if (localCurrentQIndex < questions.length) {
+        renderCurrentQuestion();
+      } else {
+        // Player finished all questions
+        renderWaitingScreen(currentRoomCache);
+      }
+    }, 850);
+  }
+
+  // Subscribe to room updates
   battleUnsub = BattleService.subscribeToRoom(battleId, (room) => {
     if (!room) return router.navigate('#dashboard');
+    currentRoomCache = room;
 
     // If battle finished, redirect to results
     if (room.status === 'finished') {
-      if (battleTimerInterval) clearInterval(battleTimerInterval);
+      if (battleUnsub) { battleUnsub(); battleUnsub = null; }
+      router.navigate(`#results/${battleId}`);
+      return;
+    }
+
+    // Check if all players in room are finished
+    const playerList = Object.values(room.players || {});
+    if (playerList.length > 0 && playerList.every(p => p.finished)) {
       if (battleUnsub) { battleUnsub(); battleUnsub = null; }
       router.navigate(`#results/${battleId}`);
       return;
@@ -801,235 +1032,29 @@ function renderBattleView(params) {
             ${remainingSec}
           </div>
           <p style="color: var(--text-muted); margin-top: 14px; font-size: 0.9rem;">
-            Negative marking is active. Aim for speed and accuracy!
+            +2.0 for Correct • -0.66 for Wrong (-1/3rd). Move at your own pace!
           </p>
         </div>
       `;
       return;
     }
 
-    const questions = room.questions || [];
-    totalQTime = room.timePerQuestion || 45;
-
-    // If user already finished all questions, show waiting screen until all opponents finish
+    // If user has completed their questions, update waiting screen
     const myPlayerState = room.players?.[user.id];
-    if (myPlayerState && myPlayerState.finished) {
-      if (battleTimerInterval) clearInterval(battleTimerInterval);
-      const playersList = Object.values(room.players || {});
-      const pendingCount = playersList.filter(p => !p.finished).length;
-
-      mainView.innerHTML = `
-        <div class="text-center glass-card" style="max-width: 500px; margin: 60px auto; padding: 40px 30px;">
-          <div style="font-size: 3.5rem; margin-bottom: 12px;">⏳</div>
-          <h2 class="gradient-gold" style="font-size: 1.8rem; margin-bottom: 8px;">Quiz Completed!</h2>
-          <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 24px;">
-            Waiting for ${pendingCount} friend(s) to finish their questions...
-          </p>
-
-          <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
-            ${playersList.map(p => `
-              <div class="glass-panel" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <span>${p.avatar}</span>
-                  <span style="font-weight: 600;">${p.name}</span>
-                </div>
-                <div>
-                  ${p.finished ? '<span class="badge badge-emerald">Finished ✅</span>' : `<span class="badge badge-gold">Q ${p.currentQuestionIndex + 1}/${questions.length}</span>`}
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
+    if (localCurrentQIndex >= (room.questions?.length || 10) || (myPlayerState && myPlayerState.finished)) {
+      renderWaitingScreen(room);
       return;
     }
 
-    // Render Question
-    const currentQ = questions[localCurrentQIndex];
-    if (!currentQ) return;
-
-    // Start Question Timer if not running
-    if (!battleTimerInterval) {
-      timeLeft = totalQTime;
-      battleTimerInterval = setInterval(() => {
-        timeLeft--;
-        const timerBar = document.getElementById('battle-timer-bar');
-        const timerNum = document.getElementById('battle-timer-num');
-        if (timerBar && timerNum) {
-          timerNum.innerText = `${timeLeft}s`;
-          const pct = Math.max(0, (timeLeft / totalQTime) * 100);
-          timerBar.style.width = `${pct}%`;
-          if (timeLeft <= 5) {
-            timerBar.style.background = '#ef4444';
-            sounds.tick();
-          }
-        }
-
-        if (timeLeft <= 0) {
-          clearInterval(battleTimerInterval);
-          battleTimerInterval = null;
-          handleQuestionAnswer(battleId, user.id, localCurrentQIndex, currentQ, null, 0);
-        }
-      }, 1000);
-    }
-
-    const otherPlayers = Object.values(room.players || {}).filter(p => p.id !== user.id);
-
-    mainView.innerHTML = `
-      <div style="max-width: 820px; margin: 0 auto;">
-        <!-- Battle Top Header Bar: Score, Question Index, Streak & Live Opponents -->
-        <div class="glass-card" style="padding: 16px 24px; margin-bottom: 18px;">
-          <div class="flex-between" style="flex-wrap: wrap; gap: 12px;">
-            <div style="display: flex; align-items: center; gap: 14px;">
-              <span class="badge badge-primary">Q ${localCurrentQIndex + 1} of ${questions.length}</span>
-              <span class="badge badge-gold">⚡ ${currentQ.subject}</span>
-              ${currentStreak > 1 ? `<span class="streak-badge"><span class="flame-icon">🔥</span> ${currentStreak}x Streak</span>` : ''}
-            </div>
-
-            <div style="display: flex; align-items: center; gap: 18px;">
-              <div style="text-align: right;">
-                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">YOUR SCORE</div>
-                <div style="font-size: 1.3rem; font-weight: 800; color: #818cf8;">${localScore} pts</div>
-              </div>
-
-              <!-- Opponents Mini Progress Avatars -->
-              <div style="display: flex; gap: 8px; border-left: 1px solid var(--border-subtle); padding-left: 14px;">
-                ${otherPlayers.map(op => `
-                  <div style="text-align: center;" title="${op.name}: Q${(op.currentQuestionIndex || 0) + 1}">
-                    <div style="font-size: 1.1rem;">${op.avatar}</div>
-                    <div style="font-size: 0.7rem; color: var(--text-secondary);">${op.score || 0}</div>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          </div>
-
-          <!-- Question Progress Bar -->
-          <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-top: 14px; overflow: hidden;">
-            <div style="width: ${((localCurrentQIndex + 1) / questions.length) * 100}%; height: 100%; background: var(--primary);"></div>
-          </div>
-        </div>
-
-        <!-- Timer Bar -->
-        <div style="margin-bottom: 18px;">
-          <div class="flex-between" style="font-size: 0.82rem; font-weight: 700; margin-bottom: 4px;">
-            <span style="color: var(--text-secondary);">TIME REMAINING</span>
-            <span id="battle-timer-num" style="color: #fbbf24;">${timeLeft}s</span>
-          </div>
-          <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
-            <div id="battle-timer-bar" style="width: ${(timeLeft / totalQTime) * 100}%; height: 100%; background: var(--primary); transition: width 0.9s linear;"></div>
-          </div>
-        </div>
-
-        <!-- Question Card -->
-        <div class="glass-card" style="padding: 30px; margin-bottom: 20px;">
-          <div style="display: flex; gap: 8px; margin-bottom: 14px;">
-            <span class="badge badge-emerald">${currentQ.exam || 'UPSC CSE'} ${currentQ.year || ''}</span>
-            <span class="badge badge-primary">${currentQ.microtheme || 'Microtheme'}</span>
-          </div>
-
-          <h3 style="font-size: 1.15rem; font-weight: 600; line-height: 1.6; margin-bottom: 24px; color: var(--text-primary); white-space: pre-wrap;">
-${currentQ.question}
-          </h3>
-
-          <!-- MCQ Options A, B, C, D -->
-          <div style="display: flex; flex-direction: column;">
-            ${['A', 'B', 'C', 'D'].map(opt => {
-              const optText = currentQ[`option_${opt.toLowerCase()}`];
-              if (!optText) return '';
-              return `
-                <div class="option-card" data-opt="${opt}" id="opt-${opt}">
-                  <div class="option-letter">${opt}</div>
-                  <div class="option-text">${optText}</div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        </div>
-      </div>
-    `;
-
-    // Attach click listeners to options
-    document.querySelectorAll('.option-card').forEach(card => {
-      card.addEventListener('click', () => {
-        if (isAnswerLocked) return;
-        isAnswerLocked = true;
-
-        if (battleTimerInterval) {
-          clearInterval(battleTimerInterval);
-          battleTimerInterval = null;
-        }
-
-        const selectedOpt = card.getAttribute('data-opt');
-        handleQuestionAnswer(battleId, user.id, localCurrentQIndex, currentQ, selectedOpt, timeLeft);
-      });
-    });
-  });
-
-  async function handleQuestionAnswer(bId, userId, qIdx, qObj, selectedOpt, timeRemaining) {
-    const isCorrect = selectedOpt === qObj.correct_answer;
-    const scoreResult = BattleEngine.calculateScore(isCorrect, timeRemaining, totalQTime, currentStreak);
-
-    if (isCorrect) {
-      sounds.correct();
-      currentStreak++;
-      localScore += scoreResult.points;
-      document.getElementById(`opt-${selectedOpt}`)?.classList.add('correct');
-      showToast(`+${scoreResult.points} pts! Speed bonus: +${scoreResult.speedBonus}`, 'success', 1500);
+    // If question has not been initialized yet, initialize it!
+    if (!hasInitializedQuestion) {
+      hasInitializedQuestion = true;
+      renderCurrentQuestion();
     } else {
-      sounds.wrong();
-      currentStreak = 0;
-      localScore += scoreResult.points; // Negative marking
-      if (selectedOpt) {
-        document.getElementById(`opt-${selectedOpt}`)?.classList.add('wrong');
-      }
-      document.getElementById(`opt-${qObj.correct_answer}`)?.classList.add('correct');
-      showToast(`-33 pts Negative marking penalty! Correct was (${qObj.correct_answer})`, 'error', 1500);
-
-      // Save to Mistake Notebook
-      LocalDB.addMistake(userId, {
-        questionId: qObj.id,
-        question: qObj.question,
-        option_a: qObj.option_a,
-        option_b: qObj.option_b,
-        option_c: qObj.option_c,
-        option_d: qObj.option_d,
-        selectedOption: selectedOpt || 'Timeout',
-        correctAnswer: qObj.correct_answer,
-        explanation: qObj.explanation,
-        subject: qObj.subject,
-        microtheme: qObj.microtheme,
-        year: qObj.year
-      });
+      // Just update opponents bar without rebuilding question card or resetting listeners!
+      updateOpponentsBar(room);
     }
-
-    localAnswers[qIdx] = {
-      selectedOption: selectedOpt,
-      isCorrect,
-      pointsEarned: scoreResult.points,
-      correctAnswer: qObj.correct_answer,
-      explanation: qObj.explanation
-    };
-
-    await BattleService.submitAnswer(
-      bId,
-      userId,
-      qIdx,
-      selectedOpt,
-      isCorrect,
-      scoreResult.points,
-      totalQTime - timeRemaining
-    );
-
-    setTimeout(() => {
-      localCurrentQIndex++;
-      isAnswerLocked = false;
-      const room = peerBus.get(`battles/${bId}`);
-      if (room && localCurrentQIndex >= room.questions.length) {
-        // finished
-      }
-    }, 1200);
-  }
+  });
 }
 
 // ==========================================
@@ -1046,7 +1071,7 @@ async function renderResultsView(params) {
   launchConfetti();
   sounds.fanfare();
 
-  const players = Object.values(room.players || {}).sort((a, b) => (b.score || 0) - (a.score || 0));
+  const players = Object.values(room.players || {}).sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0));
   const myPlayer = room.players[user.id];
   const myRank = players.findIndex(p => p.id === user.id) + 1;
   const isWinner = myRank === 1;
@@ -1066,13 +1091,16 @@ async function renderResultsView(params) {
       const ans = myPlayer.answers[k];
       if (ans.isCorrect) {
         qCorrectCount++;
-        positiveMarks += (ans.pointsEarned || 100);
+        positiveMarks += 2.0;
       } else {
-        negativePenalty += 33;
+        negativePenalty += 0.66;
       }
     }
   }
 
+  positiveMarks = Math.round(positiveMarks * 100) / 100;
+  negativePenalty = Math.round(negativePenalty * 100) / 100;
+  const netScore = Math.round((positiveMarks - negativePenalty) * 100) / 100;
   const wrongCount = qAttemptedCount - qCorrectCount;
   const accuracyPct = qAttemptedCount > 0 ? Math.round((qCorrectCount / qAttemptedCount) * 100) : 0;
 
@@ -1080,7 +1108,7 @@ async function renderResultsView(params) {
   const stats = user.stats || {};
   stats.totalBattles = (stats.totalBattles || 0) + 1;
   if (isWinner) stats.battlesWon = (stats.battlesWon || 0) + 1;
-  stats.totalPoints = (stats.totalPoints || 0) + (myPlayer?.score || 0);
+  stats.totalPoints = Math.round(((stats.totalPoints || 0) + (myPlayer?.score || netScore)) * 100) / 100;
   stats.questionsAttempted = (stats.questionsAttempted || 0) + qAttemptedCount;
   stats.questionsCorrect = (stats.questionsCorrect || 0) + qCorrectCount;
 
@@ -1090,7 +1118,7 @@ async function renderResultsView(params) {
   LocalDB.addMarksHistoryRecord(user.id, {
     mode: 'Live Battle',
     subject: room.subject,
-    score: myPlayer?.score || 0,
+    score: myPlayer?.score !== undefined ? myPlayer.score : netScore,
     positiveMarks,
     negativePenalty,
     correctCount: qCorrectCount,
@@ -1105,11 +1133,16 @@ async function renderResultsView(params) {
     battleId,
     subject: room.subject,
     date: Date.now(),
-    score: myPlayer?.score || 0,
+    score: myPlayer?.score !== undefined ? myPlayer.score : netScore,
     rank: myRank,
     won: isWinner,
     questionCount: room.questions.length
   });
+
+  function formatScoreText(score) {
+    const num = Number(score || 0);
+    return (num >= 0 ? '+' : '') + num.toFixed(2);
+  }
 
   mainView.innerHTML = `
     <div style="max-width: 840px; margin: 0 auto;">
@@ -1120,14 +1153,14 @@ async function renderResultsView(params) {
           ${isWinner ? 'Victory is Yours!' : `Rank #${myRank} Finish`}
         </h2>
         <p style="color: var(--text-secondary); margin-top: 4px;">
-          ${room.subject} • ${room.questions.length} MCQs with Negative Marking
+          ${room.subject} • ${room.questions.length} MCQs with Official UPSC Marking (+2.0 / -0.66)
         </p>
 
         <!-- Score Breakdown Badges -->
         <div style="display: flex; justify-content: center; gap: 14px; margin: 18px 0; flex-wrap: wrap;">
-          <span class="badge badge-emerald">+${positiveMarks} Gross Points</span>
-          <span class="badge badge-crimson">-${negativePenalty} Negative Penalty</span>
-          <span class="badge badge-gold">Net: ${myPlayer?.score || 0} pts (${accuracyPct}% Acc)</span>
+          <span class="badge badge-emerald">+${positiveMarks.toFixed(2)} Correct Marks</span>
+          <span class="badge badge-crimson">-${negativePenalty.toFixed(2)} Negative Penalty</span>
+          <span class="badge badge-gold">Net: ${formatScoreText(myPlayer?.score ?? netScore)} Marks (${accuracyPct}% Acc)</span>
         </div>
 
         <!-- Podium Display for 3 Friends -->
@@ -1141,7 +1174,7 @@ async function renderResultsView(params) {
               <div style="display: flex; flex-direction: column; align-items: center; width: 110px;">
                 <div style="font-size: 2rem; margin-bottom: 4px;">${p.avatar}</div>
                 <div style="font-weight: 700; font-size: 0.95rem;">${p.name}</div>
-                <div style="font-size: 0.85rem; color: ${color}; font-weight: 800; margin-bottom: 8px;">${p.score} pts</div>
+                <div style="font-size: 0.85rem; color: ${color}; font-weight: 800; margin-bottom: 8px;">${formatScoreText(p.score)} marks</div>
                 <div style="width: 100%; height: ${height}; background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 100%); border: 1px solid ${color}; border-radius: var(--radius-md) var(--radius-md) 0 0; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.2rem; color: ${color};">
                   ${rankOrder}
                 </div>
@@ -1150,7 +1183,7 @@ async function renderResultsView(params) {
           }).join('')}
         </div>
 
-        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px; flex-wrap: wrap;">
           <a href="#create-battle" class="btn btn-primary btn-lg">⚔️ Play Rematch</a>
           <a href="#profile" class="btn btn-gold btn-lg">📊 View Marks History</a>
           <a href="#dashboard" class="btn btn-glass btn-lg">🏠 Arena Dashboard</a>
@@ -1173,7 +1206,7 @@ async function renderResultsView(params) {
               <div class="glass-panel" style="padding: 20px; border-left: 4px solid ${isCorrect ? '#10b981' : '#ef4444'};">
                 <div class="flex-between mb-2">
                   <span class="badge ${isCorrect ? 'badge-emerald' : 'badge-crimson'}">
-                    Q${qIdx + 1}: ${isCorrect ? '+Points Earned' : '-33 pts Penalty'}
+                    Q${qIdx + 1}: ${isCorrect ? '+2.00 Marks' : '-0.66 Penalty'}
                   </span>
                   <span style="font-size: 0.8rem; color: var(--text-muted);">${q.microtheme} (${q.year || ''})</span>
                 </div>
@@ -1227,6 +1260,11 @@ async function renderDailyView() {
   const hours = Math.floor(secondsLeft / 3600);
   const minutes = Math.floor((secondsLeft % 3600) / 60);
 
+  function formatScoreText(score) {
+    const num = Number(score || 0);
+    return (num >= 0 ? '+' : '') + num.toFixed(2);
+  }
+
   if (!mySubmission) {
     // Has not attempted today's daily challenge yet
     const questions = await DailyChallenge.getDailyQuestions();
@@ -1248,7 +1286,7 @@ async function renderDailyView() {
             </div>
             <div style="border-left: 1px solid var(--border-subtle); padding-left: 24px;">
               <div style="font-size: 1.4rem; font-weight: 800; color: #34d399;">10 MCQs</div>
-              <div style="font-size: 0.75rem; color: var(--text-muted);">-33 pts Negative Marking</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">+2.0 / -0.66 Marking</div>
             </div>
           </div>
 
@@ -1293,7 +1331,7 @@ async function renderDailyView() {
                     <div style="font-weight: 700;">${u.name}</div>
                   </div>
                   <div>
-                    ${sub ? (isRevealed ? `<strong style="color: #fbbf24;">${sub.score} pts</strong>` : '<span class="badge badge-emerald">Done (Score Hidden 🔒)</span>') : '<span class="badge badge-gold">Pending...</span>'}
+                    ${sub ? (isRevealed ? `<strong style="color: #fbbf24;">${formatScoreText(sub.score)} marks</strong>` : '<span class="badge badge-emerald">Done (Score Hidden 🔒)</span>') : '<span class="badge badge-gold">Pending...</span>'}
                   </div>
                 </div>
               `;
@@ -1312,6 +1350,11 @@ function startDailyQuizFlow(questions, user) {
   let score = 0;
   const answers = {};
 
+  function formatScoreText(s) {
+    const num = Number(s || 0);
+    return (num >= 0 ? '+' : '') + num.toFixed(2);
+  }
+
   function renderQ() {
     if (qIdx >= questions.length) {
       // Completed daily quiz
@@ -1329,21 +1372,22 @@ function startDailyQuizFlow(questions, user) {
         <div class="glass-card" style="padding: 16px 24px; margin-bottom: 18px;">
           <div class="flex-between">
             <span class="badge badge-gold">Daily MCQ ${qIdx + 1} of ${questions.length}</span>
-            <span style="font-weight: 700; color: #818cf8;">Score: ${score} pts</span>
+            <span style="font-weight: 700; color: ${score >= 0 ? '#34d399' : '#f87171'};">Score: ${formatScoreText(score)} marks</span>
           </div>
         </div>
 
         <div class="glass-card" style="padding: 30px;">
-          <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+          <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;">
             <span class="badge badge-emerald">${q.subject}</span>
             <span class="badge badge-primary">${q.microtheme}</span>
+            <span class="badge badge-gold" style="font-size: 0.75rem;">+2.0 / -0.66</span>
           </div>
 
           <h3 style="font-size: 1.15rem; font-weight: 600; line-height: 1.6; margin-bottom: 24px; white-space: pre-wrap;">
 ${q.question}
           </h3>
 
-          <div style="display: flex; flex-direction: column;">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
             ${['A', 'B', 'C', 'D'].map(opt => {
               const optText = q[`option_${opt.toLowerCase()}`];
               if (!optText) return '';
@@ -1363,24 +1407,26 @@ ${q.question}
       card.addEventListener('click', () => {
         const selected = card.getAttribute('data-opt');
         const isCorrect = selected === q.correct_answer;
-        const pts = isCorrect ? 100 : -33;
+        const pts = isCorrect ? 2.0 : -0.66;
 
         if (isCorrect) {
           sounds.correct();
           card.classList.add('correct');
+          showToast('+2.0 Marks!', 'success', 1000);
         } else {
           sounds.wrong();
           card.classList.add('wrong');
           document.getElementById(`daily-opt-${q.correct_answer}`)?.classList.add('correct');
+          showToast(`-0.66 Marks! Correct was (${q.correct_answer})`, 'error', 1200);
         }
 
-        score += pts;
+        score = Math.round((score + pts) * 100) / 100;
         answers[qIdx] = { selectedOption: selected, isCorrect, pointsEarned: pts };
 
         setTimeout(() => {
           qIdx++;
           renderQ();
-        }, 1200);
+        }, 850);
       });
     });
   }
@@ -1603,16 +1649,16 @@ function renderProfileView() {
         <!-- 4 Quick Lifetime Stats -->
         <div class="grid-4 mt-6">
           <div class="glass-panel" style="padding: 14px; text-align: center;">
-            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">NET POINTS</div>
-            <div style="font-size: 1.6rem; font-weight: 900; color: #818cf8; margin-top: 2px;">${(stats.totalPoints || 0).toLocaleString()}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">NET MARKS</div>
+            <div style="font-size: 1.6rem; font-weight: 900; color: #818cf8; margin-top: 2px;">${Number(stats.totalPoints || 0).toFixed(2)}</div>
           </div>
           <div class="glass-panel" style="padding: 14px; text-align: center;">
-            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">GROSS MARKS</div>
-            <div style="font-size: 1.6rem; font-weight: 900; color: #34d399; margin-top: 2px;">+${totalPositive.toLocaleString()}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">GROSS MARKS (+2.0)</div>
+            <div style="font-size: 1.6rem; font-weight: 900; color: #34d399; margin-top: 2px;">+${Number(totalPositive || 0).toFixed(2)}</div>
           </div>
           <div class="glass-panel" style="padding: 14px; text-align: center;">
-            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">TOTAL PENALTY (-33)</div>
-            <div style="font-size: 1.6rem; font-weight: 900; color: #f87171; margin-top: 2px;">-${totalPenalty.toLocaleString()}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">PENALTY (-0.66)</div>
+            <div style="font-size: 1.6rem; font-weight: 900; color: #f87171; margin-top: 2px;">-${Number(totalPenalty || 0).toFixed(2)}</div>
           </div>
           <div class="glass-panel" style="padding: 14px; text-align: center;">
             <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">WIN RATE</div>
@@ -1659,14 +1705,15 @@ function renderProfileView() {
                   </div>
 
                   <div class="text-right">
-                    <div style="font-size: 1.4rem; font-weight: 900; color: #818cf8;">${r.score} pts</div>
+                    <div style="font-size: 1.4rem; font-weight: 900; color: #818cf8;">${Number(r.score || 0).toFixed(2)} marks</div>
                     <div style="font-size: 0.75rem; color: var(--text-muted);">
-                      <span style="color: #34d399;">+${r.positiveMarks || 0}</span> | <span style="color: #f87171;">-${r.negativePenalty || 0}</span>
+                      <span style="color: #34d399;">+${Number(r.positiveMarks || 0).toFixed(2)}</span> | <span style="color: #f87171;">-${Number(r.negativePenalty || 0).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
               `).join('')}
             </div>
+
           `}
         </div>
       </div>

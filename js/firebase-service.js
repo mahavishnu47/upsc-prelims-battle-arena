@@ -208,7 +208,7 @@ export const BattleService = {
       answeredAt: Date.now()
     };
 
-    p.score += pointsEarned;
+    p.score = Math.round(((p.score || 0) + pointsEarned) * 100) / 100;
     if (isCorrect) {
       p.streak = (p.streak || 0) + 1;
     } else {
