@@ -132,14 +132,14 @@ export const Auth = {
   async syncCloudUsers() {
     try {
       const cloudUsers = await UserService.getAllUsers();
-      if (cloudUsers && cloudUsers.length > 0) {
-        const localUsers = LocalDB.getRegisteredUsers();
-        const map = new Map();
-        localUsers.forEach(u => map.set(u.id, u));
-        cloudUsers.forEach(u => map.set(u.id, u));
-        const merged = Array.from(map.values());
-        LocalDB.saveRegisteredUsers(merged);
-        return merged;
+      if (Array.isArray(cloudUsers)) {
+        LocalDB.saveRegisteredUsers(cloudUsers);
+        // If current logged-in user was deleted from cloud, log out
+        const currentUser = LocalDB.getUser();
+        if (currentUser && !cloudUsers.some(u => u.id === currentUser.id)) {
+          LocalDB.setUser(null);
+        }
+        return cloudUsers;
       }
     } catch (e) {
       console.warn("Cloud users sync failed:", e);

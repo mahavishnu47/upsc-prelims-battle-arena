@@ -664,14 +664,27 @@ async function renderCreateBattleView() {
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Number of Questions</label>
-            <select id="battle-count-select" class="form-select">
-              <option value="5">5 Questions (Quick Clash)</option>
-              <option value="10" selected>10 Questions (Standard Battle)</option>
-              <option value="15">15 Questions (Deep Drill)</option>
-              <option value="25">25 Questions (Prelims Mini-Mock)</option>
-            </select>
+          <div class="grid-2 gap-2">
+            <div class="form-group">
+              <label class="form-label">Number of Questions</label>
+              <select id="battle-count-select" class="form-select">
+                <option value="5">5 Questions (Quick Clash)</option>
+                <option value="10" selected>10 Questions (Standard Battle)</option>
+                <option value="15">15 Questions (Deep Drill)</option>
+                <option value="25">25 Questions (Prelims Mini-Mock)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Player Limit (Up to 10)</label>
+              <select id="battle-players-count-select" class="form-select">
+                <option value="2">2 Players (1v1 Duel)</option>
+                <option value="3">3 Players</option>
+                <option value="4">4 Players</option>
+                <option value="5">5 Players</option>
+                <option value="10" selected>10 Players (Battle Royale Max)</option>
+              </select>
+            </div>
           </div>
 
           <!-- UPSC Simulation Rules Banner -->
@@ -730,6 +743,7 @@ async function renderCreateBattleView() {
 
     const subject = subjectSelect.value;
     const count = parseInt(document.getElementById('battle-count-select').value, 10);
+    const maxPlayers = parseInt(document.getElementById('battle-players-count-select')?.value || '10', 10);
     const prioritizeUnattempted = document.getElementById('battle-unattempted-toggle').checked;
 
     const selectedMts = Array.from(document.querySelectorAll('.mt-checkbox:checked')).map(cb => cb.value);
@@ -754,6 +768,7 @@ async function renderCreateBattleView() {
       hostName: user.name,
       subject: subject === 'all' ? 'All Subjects' : subject,
       questionCount: questions.length,
+      maxPlayers,
       status: 'waiting', // waiting -> starting -> active -> finished
       createdAt: Date.now(),
       questions,
@@ -800,10 +815,18 @@ function renderLobbyView(params) {
       mainView.innerHTML = `
         <div class="text-center glass-card" style="padding: 40px; max-width: 480px; margin: 40px auto;">
           <h2>Battle Room Not Found</h2>
-          <p style="color: var(--text-secondary); margin: 12px 0;">This room may have expired or been closed.</p>
+          <p style="color: var(--text-secondary); margin-12px 0;">This room may have expired or been closed.</p>
           <a href="#dashboard" class="btn btn-primary">Return to Dashboard</a>
         </div>
       `;
+      return;
+    }
+
+    // If battle already finished or current player has already finished, send directly to results
+    const myPlayerState = room.players?.[user.id];
+    if (room.status === 'finished' || (myPlayerState && myPlayerState.finished)) {
+      if (lobbyUnsub) { lobbyUnsub(); lobbyUnsub = null; }
+      router.navigate(`#results/${battleId}`);
       return;
     }
 
@@ -815,6 +838,7 @@ function renderLobbyView(params) {
     }
 
     const playersList = Object.values(room.players || {});
+    const maxCapacity = room.maxPlayers || 10;
     const isHost = room.hostId === user.id;
     const shareUrl = `${window.location.origin}${window.location.pathname}#lobby/${battleId}`;
 
@@ -835,7 +859,7 @@ function renderLobbyView(params) {
           <!-- Share Link Box -->
           <div class="glass-panel" style="padding: 16px; margin-bottom: 24px;">
             <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">
-              🔗 Share link with your 2 friends to join:
+              🔗 Share link with your friends to join (Up to ${maxCapacity} players):
             </div>
             <div style="display: flex; gap: 8px;">
               <input type="text" readonly value="${shareUrl}" class="form-input" style="font-size: 0.85rem;" id="lobby-share-input" />
@@ -847,7 +871,7 @@ function renderLobbyView(params) {
           <!-- Players in Lobby -->
           <div style="margin-bottom: 24px;">
             <h4 style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-              <span>Players Joined (${playersList.length}/3)</span>
+              <span>Players Joined (${playersList.length}/${maxCapacity})</span>
               <span style="font-size: 0.75rem; color: #34d399;">● Live Sync</span>
             </h4>
 
@@ -865,9 +889,9 @@ function renderLobbyView(params) {
                 </div>
               `).join('')}
 
-              ${playersList.length < 3 ? `
+              ${playersList.length < maxCapacity ? `
                 <div style="border: 2px dashed var(--border-subtle); border-radius: var(--radius-md); padding: 14px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
-                  Waiting for ${3 - playersList.length} more friend(s) to join...
+                  Waiting for up to ${maxCapacity - playersList.length} more friend(s) to join...
                 </div>
               ` : ''}
             </div>
@@ -876,7 +900,7 @@ function renderLobbyView(params) {
           <!-- Start Action -->
           ${isHost ? `
             <button id="btn-start-battle" class="btn btn-gold w-full btn-lg">
-              Start Battle Countdown ⚔️ (All Players Ready)
+              Start Battle Countdown ⚔️ (${playersList.length} Players Ready)
             </button>
           ` : `
             <div class="text-center" style="padding: 12px; color: var(--text-secondary); font-size: 0.9rem;">
@@ -948,21 +972,25 @@ function renderBattleView(params) {
       return;
     }
 
-    oppContainer.innerHTML = otherPlayers.map(op => {
-      const opScore = Number(op.score || 0);
-      const isFin = op.finished || (op.currentQuestionIndex || 0) >= (room.questions?.length || 10);
-      return `
-        <div style="text-align: center; min-width: 52px;" title="${op.name}: Q${(op.currentQuestionIndex || 0) + 1}">
-          <div style="font-size: 1.25rem;">${op.avatar || '🎯'}</div>
-          <div style="font-size: 0.75rem; font-weight: 800; color: ${opScore >= 0 ? '#34d399' : '#f87171'};">
-            ${formatMarks(opScore)}
-          </div>
-          <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">
-            ${isFin ? '✅ Done' : `Q${(op.currentQuestionIndex || 0) + 1}/${room.questions?.length || 10}`}
-          </div>
-        </div>
-      `;
-    }).join('');
+    oppContainer.innerHTML = `
+      <div style="display: flex; gap: 8px; overflow-x: auto; max-width: 320px; padding-bottom: 2px;">
+        ${otherPlayers.map(op => {
+          const opScore = Number(op.score || 0);
+          const isFin = op.finished || (op.currentQuestionIndex || 0) >= (room.questions?.length || 10);
+          return `
+            <div style="text-align: center; min-width: 48px;" title="${op.name}: Q${(op.currentQuestionIndex || 0) + 1}">
+              <div style="font-size: 1.15rem;">${op.avatar || '🎯'}</div>
+              <div style="font-size: 0.72rem; font-weight: 800; color: ${opScore >= 0 ? '#34d399' : '#f87171'};">
+                ${formatMarks(opScore)}
+              </div>
+              <div style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">
+                ${isFin ? '✅' : `Q${(op.currentQuestionIndex || 0) + 1}`}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
   }
 
   function renderWaitingScreen(room) {
@@ -1271,9 +1299,27 @@ ${currentQ.question}
       startCountdownTimer = null;
     }
 
-    // If user has completed their questions, update waiting screen
+    // Restore user's current progress from database
     const myPlayerState = room.players?.[user.id];
+    if (myPlayerState) {
+      if (myPlayerState.score !== undefined) {
+        localScore = Number(myPlayerState.score);
+      }
+      if (myPlayerState.answers) {
+        localAnswers = myPlayerState.answers;
+      }
+      if (myPlayerState.currentQuestionIndex !== undefined) {
+        localCurrentQIndex = Math.max(localCurrentQIndex, myPlayerState.currentQuestionIndex);
+      }
+    }
+
+    // If user has completed their questions, lock into waiting screen or redirect to results
     if (localCurrentQIndex >= (room.questions?.length || 10) || (myPlayerState && myPlayerState.finished)) {
+      if (room.status === 'finished') {
+        if (battleUnsub) { battleUnsub(); battleUnsub = null; }
+        router.navigate(`#results/${battleId}`);
+        return;
+      }
       renderWaitingScreen(room);
       return;
     }
@@ -1778,166 +1824,228 @@ async function renderSyllabusView() {
 
   const myProgress = await SyllabusTracker.getSubjectProgress(user.id);
   const friendsProgress = await SyllabusTracker.getFriendsComparison();
+  const otherFriends = friendsProgress.filter(f => f.user.id !== user.id);
 
-  mainView.innerHTML = `
-    <div style="max-width: 960px; margin: 0 auto;">
-      <!-- Overall Header -->
-      <div class="glass-card" style="padding: 28px; margin-bottom: 24px;">
-        <div class="flex-between" style="flex-wrap: wrap; gap: 16px;">
-          <div>
-            <span class="badge badge-primary mb-2">Master Syllabus Coverage</span>
-            <h2 style="font-size: 1.8rem;">11 Subjects • 183 Microthemes</h2>
-            <p style="color: var(--text-secondary); font-size: 0.95rem;">
-              Track which portions of the CSE/CDS/CAPF syllabus you & your friends have conquered.
-            </p>
-          </div>
+  let selectedCompareFriendId = 'none';
 
-          <div class="text-right">
-            <div style="font-size: 2.2rem; font-weight: 900; color: #34d399;">${myProgress.overallPct}%</div>
-            <div style="font-size: 0.85rem; color: var(--text-secondary);">Your Completion (${myProgress.attemptedQuestions}/${myProgress.totalQuestions} Qs)</div>
+  function renderSyllabusContent() {
+    const friendData = otherFriends.find(f => f.user.id === selectedCompareFriendId);
+
+    mainView.innerHTML = `
+      <div style="max-width: 960px; margin: 0 auto;">
+        <!-- Overall Header -->
+        <div class="glass-card" style="padding: 28px; margin-bottom: 24px;">
+          <div class="flex-between" style="flex-wrap: wrap; gap: 16px;">
+            <div>
+              <span class="badge badge-primary mb-2">Master Syllabus Coverage</span>
+              <h2 style="font-size: 1.8rem;">11 Subjects • 186 Microthemes</h2>
+              <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                Track which portions of the UPSC syllabus you & your friends have conquered.
+              </p>
+            </div>
+
+            <div class="text-right">
+              <div style="font-size: 2.2rem; font-weight: 900; color: #34d399;">${myProgress.overallPct}%</div>
+              <div style="font-size: 0.85rem; color: var(--text-secondary);">Your Completion (${myProgress.attemptedQuestions}/${myProgress.totalQuestions} Qs)</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Comparative Coverage Matrix Among 3 Friends -->
-      <div class="glass-card" style="padding: 24px; margin-bottom: 24px;">
-        <h3 style="font-size: 1.2rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-          <span>👥</span> Friends Coverage Comparison
-        </h3>
+        <!-- Friend Comparison Filter Selector -->
+        <div class="glass-card" style="padding: 20px 24px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+          <div>
+            <div style="font-weight: 700; font-size: 0.95rem;">🔍 Friend Comparison Filter</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Select a friend to compare coverage side-by-side</div>
+          </div>
 
-        <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-            <thead>
-              <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); text-align: left;">
-                <th style="padding: 10px;">Subject</th>
-                ${friendsProgress.map(f => `
-                  <th style="padding: 10px; text-align: center;">${f.user.avatar} ${f.user.name}</th>
-                `).join('')}
-              </tr>
-            </thead>
-            <tbody>
-              ${myProgress.subjects.map(s => `
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
-                  <td style="padding: 12px 10px; font-weight: 600;">${s.icon} ${s.name} <span style="color: var(--text-muted); font-size: 0.75rem;">(${s.total} Qs)</span></td>
-                  ${friendsProgress.map(f => {
-                    const subProg = f.progress.subjects.find(sub => sub.name === s.name);
-                    const pct = subProg ? subProg.pct : 0;
+          <div style="min-width: 260px;">
+            <select id="syllabus-friend-compare-select" class="form-select" style="font-size: 0.9rem;">
+              <option value="none" ${selectedCompareFriendId === 'none' ? 'selected' : ''}>👤 Show My Coverage Only</option>
+              ${otherFriends.map(f => `
+                <option value="${f.user.id}" ${selectedCompareFriendId === f.user.id ? 'selected' : ''}>
+                  ⚔️ Compare with ${f.user.avatar} ${f.user.name}
+                </option>
+              `).join('')}
+            </select>
+          </div>
+        </div>
+
+        <!-- If Friend Selected: Side-by-Side Comparison Table -->
+        ${friendData ? `
+          <div class="glass-card" style="padding: 24px; margin-bottom: 24px;">
+            <h3 style="font-size: 1.2rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+              <span>⚔️</span> Side-by-Side Comparison: You vs ${friendData.user.avatar} ${friendData.user.name}
+            </h3>
+
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); text-align: left;">
+                    <th style="padding: 10px;">Subject</th>
+                    <th style="padding: 10px; text-align: center;">🎯 You (${myProgress.overallPct}%)</th>
+                    <th style="padding: 10px; text-align: center;">${friendData.user.avatar} ${friendData.user.name} (${friendData.progress.overallPct}%)</th>
+                    <th style="padding: 10px; text-align: center;">Lead / Diff</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${myProgress.subjects.map(s => {
+                    const fSub = friendData.progress.subjects.find(sub => sub.name === s.name);
+                    const fPct = fSub ? fSub.pct : 0;
+                    const diff = s.pct - fPct;
+
                     return `
-                      <td style="padding: 12px 10px; text-align: center;">
-                        <span class="badge ${pct >= 50 ? 'badge-emerald' : pct > 0 ? 'badge-gold' : 'badge-primary'}">${pct}%</span>
-                      </td>
+                      <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                        <td style="padding: 12px 10px; font-weight: 600;">${s.icon} ${s.name} <span style="color: var(--text-muted); font-size: 0.75rem;">(${s.total} Qs)</span></td>
+                        <td style="padding: 12px 10px; text-align: center;">
+                          <span class="badge ${s.pct >= 50 ? 'badge-emerald' : s.pct > 0 ? 'badge-gold' : 'badge-primary'}">${s.pct}% (${s.attempted}/${s.total})</span>
+                        </td>
+                        <td style="padding: 12px 10px; text-align: center;">
+                          <span class="badge ${fPct >= 50 ? 'badge-emerald' : fPct > 0 ? 'badge-gold' : 'badge-primary'}">${fPct}% (${fSub ? fSub.attempted : 0}/${s.total})</span>
+                        </td>
+                        <td style="padding: 12px 10px; text-align: center; font-weight: 700; color: ${diff > 0 ? '#34d399' : diff < 0 ? '#f87171' : 'var(--text-muted)'};">
+                          ${diff > 0 ? `+${diff}% Lead 🌟` : diff < 0 ? `${diff}% Behind` : 'Tied 🤝'}
+                        </td>
+                      </tr>
                     `;
                   }).join('')}
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Subject Drilldown with Microtheme Accordions -->
-      <div style="display: flex; flex-direction: column; gap: 14px;">
-        ${myProgress.subjects.map(sub => `
-          <div class="glass-card" style="padding: 20px;">
-            <div class="flex-between" style="cursor: pointer;" onclick="document.getElementById('mt-sub-${sub.name.replace(/\s+/g, '')}').classList.toggle('active');">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="font-size: 1.6rem;">${sub.icon}</span>
-                <div>
-                  <div style="font-weight: 700; font-size: 1.05rem;">${sub.name}</div>
-                  <div style="font-size: 0.78rem; color: var(--text-muted);">${sub.attempted} / ${sub.total} MCQs attempted • ${sub.microthemes.length} Microthemes</div>
-                </div>
-              </div>
-              <div style="display: flex; align-items: center; gap: 14px;">
-                <div style="font-weight: 800; font-size: 1.1rem; color: #34d399;">${sub.pct}%</div>
-                <span style="color: var(--text-muted); font-size: 0.9rem;">▼</span>
-              </div>
-            </div>
-
-            <!-- Microthemes List (collapsible) -->
-            <div id="mt-sub-${sub.name.replace(/\s+/g, '')}" style="display: none; margin-top: 16px; border-top: 1px solid var(--border-subtle); padding-top: 14px;">
-              <div class="grid-2 gap-2">
-                ${sub.microthemes.map(mt => `
-                  <div class="glass-panel" style="padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
-                    <div>
-                      <div style="font-weight: 600; font-size: 0.85rem;">${mt.name}</div>
-                      <div style="font-size: 0.72rem; color: var(--text-muted);">${mt.attempted}/${mt.total} Qs • Yield: ${mt.yield}</div>
-                    </div>
-                    <span class="badge ${mt.pct === 100 ? 'badge-emerald' : mt.pct > 0 ? 'badge-gold' : 'badge-primary'}" style="font-size: 0.7rem;">${mt.pct}%</span>
-                  </div>
-                `).join('')}
-              </div>
+                </tbody>
+              </table>
             </div>
           </div>
-        `).join('')}
-      </div>
-    </div>
-  `;
+        ` : ''}
 
-  // Attach toggle behaviors
-  myProgress.subjects.forEach(sub => {
-    const id = `mt-sub-${sub.name.replace(/\s+/g, '')}`;
-    const el = document.getElementById(id);
-    if (el) {
-      el.parentElement.firstElementChild.addEventListener('click', () => {
-        el.style.display = el.style.display === 'none' ? 'block' : 'none';
-      });
-    }
-  });
+        <!-- Subject Drilldown with Microtheme Accordions -->
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          ${myProgress.subjects.map(sub => `
+            <div class="glass-card" style="padding: 20px;">
+              <div class="flex-between" style="cursor: pointer;" onclick="document.getElementById('mt-sub-${sub.name.replace(/[^a-zA-Z0-9]/g, '')}').classList.toggle('active');">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <span style="font-size: 1.6rem;">${sub.icon}</span>
+                  <div>
+                    <div style="font-weight: 700; font-size: 1.05rem;">${sub.name}</div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted);">${sub.attempted} / ${sub.total} MCQs attempted • ${sub.microthemes.length} Microthemes</div>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <div style="font-weight: 800; font-size: 1.1rem; color: #34d399;">${sub.pct}%</div>
+                  <span style="color: var(--text-muted); font-size: 0.9rem;">▼</span>
+                </div>
+              </div>
+
+              <!-- Microthemes List (collapsible) -->
+              <div id="mt-sub-${sub.name.replace(/[^a-zA-Z0-9]/g, '')}" style="display: none; margin-top: 16px; border-top: 1px solid var(--border-subtle); padding-top: 14px;">
+                <div class="grid-2 gap-2">
+                  ${sub.microthemes.map(mt => `
+                    <div class="glass-panel" style="padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
+                      <div>
+                        <div style="font-weight: 600; font-size: 0.85rem;">${mt.name}</div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted);">${mt.attempted}/${mt.total} Qs • Yield: ${mt.yield}</div>
+                      </div>
+                      <span class="badge ${mt.pct === 100 ? 'badge-emerald' : mt.pct > 0 ? 'badge-gold' : 'badge-primary'}" style="font-size: 0.7rem;">${mt.pct}%</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    // Attach friend filter change listener
+    document.getElementById('syllabus-friend-compare-select')?.addEventListener('change', (e) => {
+      selectedCompareFriendId = e.target.value;
+      renderSyllabusContent();
+    });
+
+    // Attach toggle behaviors
+    myProgress.subjects.forEach(sub => {
+      const id = `mt-sub-${sub.name.replace(/[^a-zA-Z0-9]/g, '')}`;
+      const el = document.getElementById(id);
+      if (el) {
+        el.parentElement.firstElementChild.addEventListener('click', () => {
+          el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        });
+      }
+    });
+  }
+
+  renderSyllabusContent();
 }
 
 // ==========================================
 // 10. View: Leaderboard
 // ==========================================
-function renderLeaderboardView() {
+async function renderLeaderboardView() {
   const user = Auth.getCurrentUser();
   if (!user) return router.navigate('#auth');
 
-  const ranked = Leaderboard.getRankings();
-
+  // Loading indicator
   mainView.innerHTML = `
-    <div style="max-width: 800px; margin: 0 auto;">
-      <div class="glass-card" style="padding: 28px; margin-bottom: 24px; text-align: center;">
-        <span class="badge badge-gold mb-2">Hall of Fame</span>
-        <h2 class="gradient-gold" style="font-size: 2rem;">Battle Arena Ranks</h2>
-        <p style="color: var(--text-secondary); font-size: 0.95rem;">
-          Ranked by Total Battle Points, Win Rate, and Overall Accuracy
-        </p>
-      </div>
-
-      <div style="display: flex; flex-direction: column; gap: 12px;">
-        ${ranked.map((p, idx) => {
-          const isTop1 = idx === 0;
-          const isMe = p.id === user.id;
-
-          return `
-            <div class="glass-card" style="padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; border: ${isTop1 ? '1.5px solid #fbbf24' : isMe ? '1.5px solid var(--primary)' : '1px solid var(--border-subtle)'};">
-              <div style="display: flex; align-items: center; gap: 16px;">
-                <div style="font-size: 1.5rem; font-weight: 900; width: 36px; color: ${isTop1 ? '#fbbf24' : idx === 1 ? '#94a3b8' : idx === 2 ? '#cd7f32' : 'var(--text-muted)'};">
-                  #${idx + 1}
-                </div>
-                <div style="font-size: 2rem;">${p.avatar}</div>
-                <div>
-                  <div style="font-weight: 800; font-size: 1.1rem;">
-                    ${p.name} ${isMe ? '<span style="color: var(--primary); font-size: 0.8rem;">(You)</span>' : ''}
-                  </div>
-                  <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; gap: 10px; margin-top: 2px;">
-                    <span>🏆 ${p.battlesWon}/${p.totalBattles} Wins (${p.winRate}%)</span>
-                    <span>🎯 ${p.accuracy}% Acc</span>
-                    <span>🔥 ${p.streak}d Streak</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="text-right">
-                <div style="font-size: 1.5rem; font-weight: 900; color: #818cf8;">${p.totalPoints.toLocaleString()}</div>
-                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">POINTS</div>
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
+    <div style="max-width: 800px; margin: 0 auto; text-align: center; padding: 60px 20px;">
+      <div style="font-size: 3rem; animation: pulse-fire 1s infinite alternate;">🏆</div>
+      <h3 style="color: var(--text-secondary); margin-top: 14px;">Loading Live Battle Arena Ranks...</h3>
     </div>
   `;
+
+  const ranked = await Leaderboard.getRankings();
+
+  function renderLeaderboardTable(players) {
+    mainView.innerHTML = `
+      <div style="max-width: 800px; margin: 0 auto;">
+        <div class="glass-card" style="padding: 28px; margin-bottom: 24px; text-align: center;">
+          <span class="badge badge-gold mb-2">Hall of Fame</span>
+          <h2 class="gradient-gold" style="font-size: 2rem;">Battle Arena Ranks</h2>
+          <p style="color: var(--text-secondary); font-size: 0.95rem;">
+            Real-time standings across all players ranked by Total Battle Points, Win Rate, and Overall Accuracy
+          </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          ${players.map((p, idx) => {
+            const isTop1 = idx === 0;
+            const isMe = p.id === user.id;
+
+            return `
+              <div class="glass-card" style="padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; border: ${isTop1 ? '1.5px solid #fbbf24' : isMe ? '1.5px solid var(--primary)' : '1px solid var(--border-subtle)'}; background: ${isMe ? 'rgba(99, 102, 241, 0.12)' : 'var(--glass-bg)'};">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                  <div style="font-size: 1.5rem; font-weight: 900; width: 36px; color: ${isTop1 ? '#fbbf24' : idx === 1 ? '#94a3b8' : idx === 2 ? '#cd7f32' : 'var(--text-muted)'};">
+                    #${idx + 1}
+                  </div>
+                  <div style="font-size: 2rem;">${p.avatar}</div>
+                  <div>
+                    <div style="font-weight: 800; font-size: 1.1rem;">
+                      ${p.name} ${isMe ? '<span style="color: var(--primary); font-size: 0.8rem;">(You)</span>' : ''}
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; gap: 10px; margin-top: 2px;">
+                      <span>🏆 ${p.battlesWon}/${p.totalBattles} Wins (${p.winRate}%)</span>
+                      <span>🎯 ${p.accuracy}% Acc</span>
+                      <span>🔥 ${p.streak}d Streak</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="text-right">
+                  <div style="font-size: 1.5rem; font-weight: 900; color: ${p.totalPoints >= 0 ? '#818cf8' : '#f87171'};">
+                    ${p.totalPoints >= 0 ? '+' : ''}${p.totalPoints.toFixed(2)}
+                  </div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">POINTS</div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderLeaderboardTable(ranked);
+
+  // Live cloud listener
+  UserService.subscribeToUsers(async () => {
+    const updated = await Leaderboard.getRankings();
+    renderLeaderboardTable(updated);
+  });
 }
 
 // ==========================================

@@ -1,20 +1,27 @@
-/**
- * UPSC Prelims Battle Arena — Leaderboard Engine
- * Computes rankings by Points, Win Rate, Accuracy, and Daily Streaks
- */
-
 import { LocalDB } from './storage.js';
+import { UserService } from './firebase-service.js';
 
 export const Leaderboard = {
-  getRankings(timeframe = 'all') {
-    const users = LocalDB.getRegisteredUsers();
+  async getRankings(timeframe = 'all') {
+    let users = [];
+    try {
+      const cloudUsers = await UserService.getAllUsers();
+      if (Array.isArray(cloudUsers) && cloudUsers.length > 0) {
+        users = cloudUsers;
+        LocalDB.saveRegisteredUsers(cloudUsers);
+      } else {
+        users = LocalDB.getRegisteredUsers();
+      }
+    } catch (e) {
+      users = LocalDB.getRegisteredUsers();
+    }
 
     // Map and enrich player statistics
     const ranked = users.map(user => {
       const stats = user.stats || {};
       const totalBattles = stats.totalBattles || 0;
       const battlesWon = stats.battlesWon || 0;
-      const totalPoints = stats.totalPoints || 0;
+      const totalPoints = Math.round((Number(stats.totalPoints) || 0) * 100) / 100;
       const qAttempted = stats.questionsAttempted || 0;
       const qCorrect = stats.questionsCorrect || 0;
 

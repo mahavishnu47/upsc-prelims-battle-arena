@@ -4,27 +4,45 @@
  */
 
 import { loadQuestions, LocalDB } from './storage.js';
-import { getISTDateString, seededRandom, showToast } from './utils.js';
+import { getISTDateString, seededRandom } from './utils.js';
 import { peerBus } from './firebase-service.js';
+
+let cachedDailyQuestionsMap = {};
 
 export const DailyChallenge = {
   /**
-   * Get 10 deterministic questions for today's IST date
+   * Get 10 deterministic questions for today's IST date instantly
    */
   async getDailyQuestions() {
-    const allQuestions = await loadQuestions();
     const dateStr = getISTDateString();
-    const rng = seededRandom("upsc_daily_" + dateStr);
-
-    // Filter questions by major subjects to ensure balanced daily challenge
-    const pool = allQuestions.slice();
-    // Deterministic shuffle
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(rng() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
+    if (cachedDailyQuestionsMap[dateStr] && cachedDailyQuestionsMap[dateStr].length === 10) {
+      return cachedDailyQuestionsMap[dateStr];
     }
 
-    return pool.slice(0, 10);
+    const allQuestions = await loadQuestions();
+    if (!allQuestions || allQuestions.length === 0) return [];
+
+    const rng = seededRandom("upsc_daily_" + dateStr);
+    const chosen = [];
+    const usedIndices = new Set();
+    const total = allQuestions.length;
+
+    // Pick 10 unique deterministic questions without cloning or shuffling the entire 8MB array
+    let attempts = 0;
+    while (chosen.length < 10 && usedIndices.size < total && attempts < 200) {
+      attempts++;
+      const idx = Math.floor(rng() * total);
+      if (!usedIndices.has(idx)) {
+        usedIndices.add(idx);
+        const q = allQuestions[idx];
+        if (q && q.question) {
+          chosen.push(q);
+        }
+      }
+    }
+
+    cachedDailyQuestionsMap[dateStr] = chosen;
+    return chosen;
   },
 
   /**
@@ -36,7 +54,7 @@ export const DailyChallenge = {
     return state || {
       date: dateStr,
       submissions: {}, // { userId: { score, answers, completedAt, name, avatar } }
-      totalRequiredPlayers: 3,
+      totalRequiredPlayers: 10,
       isRevealed: false
     };
   },
@@ -57,9 +75,9 @@ export const DailyChallenge = {
       completedAt: Date.now()
     };
 
-    // Check if all 3 friends have submitted
+    // Auto-reveal if all registered players have submitted
     const registeredUsers = LocalDB.getRegisteredUsers();
-    const expectedCount = Math.min(3, Math.max(1, registeredUsers.length));
+    const expectedCount = Math.max(1, registeredUsers.length);
     const submittedCount = Object.keys(state.submissions).length;
 
     if (submittedCount >= expectedCount) {
@@ -71,3 +89,4 @@ export const DailyChallenge = {
     return state;
   }
 };
+
