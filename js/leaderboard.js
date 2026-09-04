@@ -6,7 +6,7 @@ export const Leaderboard = {
     let users = [];
     try {
       const cloudUsers = await UserService.getAllUsers();
-      if (Array.isArray(cloudUsers) && cloudUsers.length > 0) {
+      if (Array.isArray(cloudUsers)) {
         users = cloudUsers;
         LocalDB.saveRegisteredUsers(cloudUsers);
       } else {

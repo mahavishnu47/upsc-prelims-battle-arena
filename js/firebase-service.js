@@ -279,14 +279,15 @@ export const UserService = {
       try {
         const snap = await firebaseDb.ref('users').once('value');
         const val = snap.val();
-        if (val) {
+        if (val && typeof val === 'object') {
           return Object.values(val);
         }
+        return []; // Specifically empty if users node exists but has no children / was deleted
       } catch (e) {
         console.warn("Could not fetch cloud users:", e);
       }
     }
-    return [];
+    return null;
   },
 
   subscribeToUsers(callback) {

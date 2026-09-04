@@ -12,6 +12,7 @@ import { DailyChallenge } from './daily.js';
 import { SyllabusTracker } from './syllabus.js';
 import { StreakSystem, BADGES } from './streaks.js';
 import { Leaderboard } from './leaderboard.js';
+import { formatQuestionHTML } from './question-formatter.js';
 import {
   sounds,
   showToast,
@@ -449,11 +450,12 @@ function renderAuthView() {
   // Initial render
   renderFullUI();
 
-  // Background cloud sync to immediately populate users if this is a fresh browser/device
-  Auth.syncCloudUsers().then(cloudUsers => {
-    if (cloudUsers && cloudUsers.length > 0) {
+  const updateUsersListUI = (cloudUsers) => {
+    if (Array.isArray(cloudUsers)) {
       users = cloudUsers;
-      if (!selectedUserId && users[0]) selectedUserId = users[0].id;
+      if (selectedUserId && !users.some(u => u.id === selectedUserId)) {
+        selectedUserId = users[0]?.id || '';
+      }
       const container = document.getElementById('user-cards-container');
       const searchInput = document.getElementById('login-search-input');
       if (container) {
@@ -461,21 +463,13 @@ function renderAuthView() {
         attachUserCardClickListeners();
       }
     }
-  });
+  };
 
-  // Subscribe to real-time cloud user additions
-  UserService.subscribeToUsers((cloudUsers) => {
-    if (cloudUsers && cloudUsers.length > 0) {
-      users = cloudUsers;
-      if (!selectedUserId && users[0]) selectedUserId = users[0].id;
-      const container = document.getElementById('user-cards-container');
-      const searchInput = document.getElementById('login-search-input');
-      if (container) {
-        container.innerHTML = buildUserListHTML(users, searchInput?.value || '');
-        attachUserCardClickListeners();
-      }
-    }
-  });
+  // Background cloud sync to immediately populate or prune users
+  Auth.syncCloudUsers().then(updateUsersListUI);
+
+  // Subscribe to real-time cloud user changes (additions / deletions)
+  UserService.subscribeToUsers(updateUsersListUI);
 }
 
 // ==========================================
@@ -1107,9 +1101,9 @@ function renderBattleView(params) {
             <span class="badge badge-gold" style="font-size: 0.75rem;">+2.0 / -0.66</span>
           </div>
 
-          <h3 style="font-size: 1.12rem; font-weight: 600; line-height: 1.6; margin-bottom: 24px; color: var(--text-primary); white-space: pre-wrap;">
-${currentQ.question}
-          </h3>
+          <div style="margin-bottom: 24px;">
+            ${formatQuestionHTML(currentQ.question)}
+          </div>
 
           <!-- MCQ Options A, B, C, D -->
           <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -1651,9 +1645,13 @@ async function renderDailyView() {
 function renderDailyLeaderboardView(todayStr, questions, user) {
   function buildLeaderboardHTML(state) {
     const registeredUsers = LocalDB.getRegisteredUsers();
+    const registeredUserIds = new Set(registeredUsers.map(u => u.id));
     const submissions = state?.submissions || {};
 
-    const sortedCompleted = Object.values(submissions).sort((a, b) => {
+    // Only include submissions from non-deleted registered users
+    const validSubmissions = Object.values(submissions).filter(s => registeredUserIds.has(s.userId));
+
+    const sortedCompleted = validSubmissions.sort((a, b) => {
       const scoreDiff = (Number(b.score) || 0) - (Number(a.score) || 0);
       if (scoreDiff !== 0) return scoreDiff;
       return (a.completedAt || 0) - (b.completedAt || 0);
@@ -1813,9 +1811,9 @@ function renderDailyLeaderboardView(todayStr, questions, user) {
                       </div>
                     </div>
 
-                    <p style="font-weight: 600; line-height: 1.55; margin-bottom: 14px; font-size: 0.95rem; white-space: pre-wrap;">
-${q.question}
-                    </p>
+                    <div style="margin-bottom: 14px;">
+                      ${formatQuestionHTML(q.question)}
+                    </div>
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; margin-bottom: 14px;">
                       ${['A', 'B', 'C', 'D'].map(opt => {
@@ -1974,9 +1972,9 @@ function startDailyQuizFlow(questions, user) {
             <span class="badge badge-gold" style="font-size: 0.75rem;">+2.0 / -0.66</span>
           </div>
 
-          <h3 style="font-size: 1.15rem; font-weight: 600; line-height: 1.6; margin-bottom: 24px; white-space: pre-wrap;">
-${q.question}
-          </h3>
+          <div style="margin-bottom: 24px;">
+            ${formatQuestionHTML(q.question)}
+          </div>
 
           <div style="display: flex; flex-direction: column; gap: 10px;">
             ${['A', 'B', 'C', 'D'].map(opt => {
@@ -2425,8 +2423,8 @@ function renderProfileView() {
                     </button>
                   </div>
 
-                  <div style="font-weight: 600; font-size: 0.95rem; line-height: 1.5; margin-bottom: 12px; white-space: pre-wrap;">
-${m.question}
+                  <div style="margin-bottom: 12px;">
+                    ${formatQuestionHTML(m.question)}
                   </div>
 
                   <div class="grid-2 gap-2" style="font-size: 0.82rem; margin-bottom: 10px;">
@@ -2637,9 +2635,9 @@ function renderPracticeMistakesView(count = 10) {
             ${q.microtheme || 'General'} ${q.year ? `(${q.year})` : ''}
           </div>
 
-          <h3 style="font-size: 1.1rem; font-weight: 600; line-height: 1.6; margin-bottom: 24px; white-space: pre-wrap;">
-${q.question}
-          </h3>
+          <div style="margin-bottom: 24px;">
+            ${formatQuestionHTML(q.question)}
+          </div>
 
           <div style="display: flex; flex-direction: column;">
             ${['A', 'B', 'C', 'D'].map(opt => {
@@ -2733,6 +2731,9 @@ ${q.question}
 // 12. App Initialization & Routes Registration
 // ==========================================
 function initApp() {
+  // Global real-time cloud sync to prune deleted profiles from localStorage and keep all clients synchronized
+  Auth.initCloudSync();
+
   router.add('auth', () => {
     updateNavigation('auth');
     renderAuthView();

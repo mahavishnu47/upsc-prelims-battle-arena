@@ -19,6 +19,19 @@ export const DailyChallenge = {
       return cachedDailyQuestionsMap[dateStr];
     }
 
+    // Check localStorage cache for today's 10 questions for instant 0ms return
+    const localKey = `upsc_daily_q_${dateStr}`;
+    const stored = localStorage.getItem(localKey);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length === 10) {
+          cachedDailyQuestionsMap[dateStr] = parsed;
+          return parsed;
+        }
+      } catch (e) {}
+    }
+
     const allQuestions = await loadQuestions();
     if (!allQuestions || allQuestions.length === 0) return [];
 
@@ -40,6 +53,10 @@ export const DailyChallenge = {
         }
       }
     }
+
+    try {
+      localStorage.setItem(localKey, JSON.stringify(chosen));
+    } catch (e) {}
 
     cachedDailyQuestionsMap[dateStr] = chosen;
     return chosen;

@@ -134,10 +134,15 @@ export const Auth = {
       const cloudUsers = await UserService.getAllUsers();
       if (Array.isArray(cloudUsers)) {
         LocalDB.saveRegisteredUsers(cloudUsers);
-        // If current logged-in user was deleted from cloud, log out
+        // If current logged-in user was deleted from cloud, log out immediately
         const currentUser = LocalDB.getUser();
         if (currentUser && !cloudUsers.some(u => u.id === currentUser.id)) {
+          console.warn("User account was deleted from Firebase. Logging out...");
           LocalDB.setUser(null);
+          if (window.location.hash !== '#auth') {
+            window.location.hash = '#auth';
+            window.location.reload();
+          }
         }
         return cloudUsers;
       }
@@ -145,6 +150,30 @@ export const Auth = {
       console.warn("Cloud users sync failed:", e);
     }
     return LocalDB.getRegisteredUsers();
+  },
+
+  initCloudSync(onUsersUpdated) {
+    // 1. Initial async sync
+    this.syncCloudUsers().then(users => {
+      if (onUsersUpdated) onUsersUpdated(users);
+    });
+
+    // 2. Real-time subscription to Firebase users
+    return UserService.subscribeToUsers(cloudUsers => {
+      if (Array.isArray(cloudUsers)) {
+        LocalDB.saveRegisteredUsers(cloudUsers);
+        const currentUser = LocalDB.getUser();
+        if (currentUser && !cloudUsers.some(u => u.id === currentUser.id)) {
+          console.warn("Active account was deleted from cloud. Logging out...");
+          LocalDB.setUser(null);
+          if (window.location.hash !== '#auth') {
+            window.location.hash = '#auth';
+            window.location.reload();
+          }
+        }
+        if (onUsersUpdated) onUsersUpdated(cloudUsers);
+      }
+    });
   },
 
   async register(name, pin, avatar = '🎯') {

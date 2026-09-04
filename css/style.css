@@ -764,3 +764,30 @@ main.app-content {
 .mb-2 { margin-bottom: 8px; }
 .mb-4 { margin-bottom: 16px; }
 .w-full { width: 100%; }
+
+/* UPSC Formatted Questions (Match, Statements, Pairs) */
+.statement-card {
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.statement-card:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+.match-table-card {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+.pair-card {
+  transition: all 0.2s ease;
+}
+.pair-card:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+@media (max-width: 640px) {
+  .question-match-container .match-table-card {
+    font-size: 0.85rem;
+  }
+  .pair-card {
+    grid-template-columns: auto 1fr !important;
+    gap: 6px !important;
+  }
+}

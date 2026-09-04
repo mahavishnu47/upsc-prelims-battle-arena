@@ -38,34 +38,44 @@ let cachedQuestions = null;
 let cachedSyllabus = null;
 
 export async function loadQuestions() {
-  if (cachedQuestions) return cachedQuestions;
+  if (cachedQuestions && cachedQuestions.length > 0) return cachedQuestions;
 
-  // Try fetching questions.json
-  try {
-    const response = await fetch('./data/questions.json');
-    if (response.ok) {
-      cachedQuestions = await response.json();
-      return cachedQuestions;
-    }
-  } catch (err) {
-    console.warn("Could not fetch ./data/questions.json directly:", err);
-  }
-
-  // Fallback to IndexedDB
+  // 1. Try reading from IndexedDB first for instant local speed (avoid re-downloading 8.2MB)
   try {
     const db = await initIndexedDB();
     if (db) {
       const tx = db.transaction(STORE_QUESTIONS, 'readonly');
       const store = tx.objectStore(STORE_QUESTIONS);
       const req = store.getAll();
-      const all = await new Promise(r => { req.onsuccess = () => r(req.result); });
+      const all = await new Promise(r => { req.onsuccess = () => r(req.result); req.onerror = () => r([]); });
       if (all && all.length > 0) {
         cachedQuestions = all;
         return cachedQuestions;
       }
     }
   } catch (err) {
-    console.warn("IndexedDB read error:", err);
+    console.warn("IndexedDB read note:", err);
+  }
+
+  // 2. Fallback to network fetch if not yet in IndexedDB
+  try {
+    const response = await fetch('./data/questions.json');
+    if (response.ok) {
+      cachedQuestions = await response.json();
+      // Cache questions asynchronously in IndexedDB for instant future loads
+      initIndexedDB().then(db => {
+        if (db && cachedQuestions && cachedQuestions.length > 0) {
+          try {
+            const tx = db.transaction(STORE_QUESTIONS, 'readwrite');
+            const store = tx.objectStore(STORE_QUESTIONS);
+            cachedQuestions.forEach(q => store.put(q));
+          } catch (e) {}
+        }
+      }).catch(() => {});
+      return cachedQuestions;
+    }
+  } catch (err) {
+    console.warn("Could not fetch ./data/questions.json directly:", err);
   }
 
   return [];

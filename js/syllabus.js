@@ -14,23 +14,21 @@ export const SyllabusTracker = {
     const syllabus = await loadSyllabus();
     let userProgress = LocalDB.getUserSyllabusProgress(userId);
 
-    // Sync with Firebase cloud progress if available
-    try {
-      const cloudProgress = await peerBus.getAsync(`syllabus_progress/${userId}`);
+    // Sync in background without blocking UI rendering
+    peerBus.getAsync(`syllabus_progress/${userId}`).then(cloudProgress => {
       if (cloudProgress && typeof cloudProgress === 'object') {
+        const currentLocal = LocalDB.getUserSyllabusProgress(userId);
         const cloudAttempted = Object.keys(cloudProgress.attempted || {}).length;
-        const localAttempted = Object.keys(userProgress.attempted || {}).length;
+        const localAttempted = Object.keys(currentLocal.attempted || {}).length;
         if (cloudAttempted >= localAttempted) {
-          userProgress = {
-            attempted: { ...(userProgress.attempted || {}), ...(cloudProgress.attempted || {}) },
-            correct: { ...(userProgress.correct || {}), ...(cloudProgress.correct || {}) }
+          const merged = {
+            attempted: { ...(currentLocal.attempted || {}), ...(cloudProgress.attempted || {}) },
+            correct: { ...(currentLocal.correct || {}), ...(cloudProgress.correct || {}) }
           };
-          LocalDB.saveUserSyllabusProgress(userId, userProgress);
+          LocalDB.saveUserSyllabusProgress(userId, merged);
         }
       }
-    } catch (e) {
-      console.warn("Cloud progress sync note:", e);
-    }
+    }).catch(() => {});
 
     const attemptedMap = userProgress.attempted || {};
     const correctMap = userProgress.correct || {};
