@@ -3,10 +3,21 @@
  * Real-time room sync, live multiplayer, leaderboard & daily challenge across devices
  */
 
+export const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAxRTSsGg0vcG-rYZoMncCZlqrkqjHeIb8",
+  authDomain: "upsc-battle-arena.firebaseapp.com",
+  databaseURL: "https://upsc-battle-arena-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "upsc-battle-arena",
+  storageBucket: "upsc-battle-arena.firebasestorage.app",
+  messagingSenderId: "318891684199",
+  appId: "1:318891684199:web:ca0197d5b5ee44cd9effc2",
+  measurementId: "G-FK95H21LFL"
+};
+
 let firebaseApp = null;
 let firebaseDb = null;
 
-export function initFirebase(config) {
+export function initFirebase(config = FIREBASE_CONFIG) {
   if (typeof firebase !== 'undefined' && firebase.initializeApp) {
     try {
       if (!firebase.apps || firebase.apps.length === 0) {
@@ -15,7 +26,7 @@ export function initFirebase(config) {
         firebaseApp = firebase.apps[0];
       }
       firebaseDb = firebase.database();
-      console.log("🔥 Firebase Realtime Database initialized successfully!");
+      console.log("🔥 Firebase Realtime Database connected successfully:", config.databaseURL);
       return true;
     } catch (e) {
       console.warn("Firebase initialization warning:", e);
@@ -32,7 +43,7 @@ export function getSavedFirebaseConfig() {
       return JSON.parse(custom);
     } catch (e) {}
   }
-  return null;
+  return FIREBASE_CONFIG;
 }
 
 export function saveFirebaseConfig(config) {
@@ -40,11 +51,8 @@ export function saveFirebaseConfig(config) {
   initFirebase(config);
 }
 
-// Try auto-initializing on load if config exists
-const savedConfig = getSavedFirebaseConfig();
-if (savedConfig) {
-  initFirebase(savedConfig);
-}
+// Auto-initialize with live project config on load
+initFirebase(FIREBASE_CONFIG);
 
 // Local simulation fallback
 class PeerSyncBus {

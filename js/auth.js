@@ -5,6 +5,7 @@
 
 import { LocalDB } from './storage.js';
 import { showToast } from './utils.js';
+import { peerBus } from './firebase-service.js';
 
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -166,6 +167,13 @@ export const Auth = {
     users.push(newUser);
     LocalDB.saveRegisteredUsers(users);
     LocalDB.setUser(newUser);
+
+    // Sync user profile to cloud Realtime Database
+    try {
+      peerBus.set(`users/${newUser.id}`, newUser);
+    } catch (e) {
+      console.warn("Cloud user sync warning:", e);
+    }
 
     showToast(`Welcome to Battle Arena, ${trimmedName}! 🏆`, 'success');
     return newUser;

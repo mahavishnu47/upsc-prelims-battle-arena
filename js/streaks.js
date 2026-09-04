@@ -5,6 +5,7 @@
 
 import { LocalDB } from './storage.js';
 import { getISTDateString, showToast } from './utils.js';
+import { peerBus } from './firebase-service.js';
 
 export const BADGES = [
   { id: 'first_blood', name: 'First Blood', icon: '⚔️', desc: 'Complete your first live battle' },
@@ -68,6 +69,11 @@ export const StreakSystem = {
     if (idx !== -1) {
       users[idx] = user;
       LocalDB.saveRegisteredUsers(users);
+    }
+    try {
+      peerBus.set(`users/${user.id}`, user);
+    } catch (e) {
+      console.warn("Cloud stats sync warning:", e);
     }
   },
 
