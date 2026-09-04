@@ -5,7 +5,7 @@
 
 import { LocalDB } from './storage.js';
 import { showToast } from './utils.js';
-import { peerBus } from './firebase-service.js';
+import { peerBus, UserService } from './firebase-service.js';
 
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -129,6 +129,24 @@ export const Auth = {
     return LocalDB.getRegisteredUsers();
   },
 
+  async syncCloudUsers() {
+    try {
+      const cloudUsers = await UserService.getAllUsers();
+      if (cloudUsers && cloudUsers.length > 0) {
+        const localUsers = LocalDB.getRegisteredUsers();
+        const map = new Map();
+        localUsers.forEach(u => map.set(u.id, u));
+        cloudUsers.forEach(u => map.set(u.id, u));
+        const merged = Array.from(map.values());
+        LocalDB.saveRegisteredUsers(merged);
+        return merged;
+      }
+    } catch (e) {
+      console.warn("Cloud users sync failed:", e);
+    }
+    return LocalDB.getRegisteredUsers();
+  },
+
   async register(name, pin, avatar = '🎯') {
     const trimmedName = name.trim();
     if (!trimmedName) throw new Error("Please enter your name");
@@ -136,10 +154,11 @@ export const Auth = {
       throw new Error("PIN must be exactly 4 digits (0-9)");
     }
 
-    const users = LocalDB.getRegisteredUsers();
+    // Sync cloud users first to check unique names
+    let users = await this.syncCloudUsers();
     const existing = users.find(u => u.name.toLowerCase() === trimmedName.toLowerCase());
     if (existing) {
-      throw new Error("A user with this name already exists. Please log in or choose a different name.");
+      throw new Error(`A user named "${trimmedName}" already exists. Please select your name in the Sign In list.`);
     }
 
     const pinHash = await hashPin(pin);
@@ -168,11 +187,11 @@ export const Auth = {
     LocalDB.saveRegisteredUsers(users);
     LocalDB.setUser(newUser);
 
-    // Sync user profile to cloud Realtime Database
+    // Save to Firebase Realtime Database
     try {
-      peerBus.set(`users/${newUser.id}`, newUser);
+      await UserService.saveUserToCloud(newUser);
     } catch (e) {
-      console.warn("Cloud user sync warning:", e);
+      console.warn("Cloud user sync error:", e);
     }
 
     showToast(`Welcome to Battle Arena, ${trimmedName}! 🏆`, 'success');
@@ -180,15 +199,24 @@ export const Auth = {
   },
 
   async login(nameOrId, pin) {
+    if (!nameOrId) {
+      throw new Error("Please select or search your name");
+    }
     if (!pin || pin.length !== 4) {
-      throw new Error("Please enter a 4-digit PIN");
+      throw new Error("Please enter your 4-digit PIN");
     }
 
-    const users = LocalDB.getRegisteredUsers();
-    const user = users.find(u => u.id === nameOrId || u.name.toLowerCase() === nameOrId.toLowerCase());
+    let users = LocalDB.getRegisteredUsers();
+    let user = users.find(u => u.id === nameOrId || u.name.toLowerCase() === nameOrId.trim().toLowerCase());
+
+    // If not found in local DB, attempt cloud fetch
+    if (!user) {
+      users = await this.syncCloudUsers();
+      user = users.find(u => u.id === nameOrId || u.name.toLowerCase() === nameOrId.trim().toLowerCase());
+    }
 
     if (!user) {
-      throw new Error("User not found. Please register first.");
+      throw new Error(`Profile "${nameOrId}" not found. Please click Register to create your account.`);
     }
 
     // Check lockout

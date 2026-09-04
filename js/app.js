@@ -182,135 +182,298 @@ function openCloudSetupModal() {
 // ==========================================
 // 2. View: Auth (PIN Login / Register)
 // ==========================================
+// ==========================================
+// 2. View: Auth (Searchable PIN Login / Register)
+// ==========================================
 function renderAuthView() {
-  const users = Auth.getRegisteredUsers();
-  const hasUsers = users.length > 0;
+  let users = Auth.getRegisteredUsers();
+  let selectedUserId = users[0]?.id || '';
+  let activeTab = users.length > 0 ? 'login' : 'register';
 
-  mainView.innerHTML = `
-    <div style="max-width: 440px; margin: 40px auto;" class="glass-card" style="padding: 36px 28px;">
-      <div style="padding: 30px 24px;">
-        <div class="text-center mb-4">
-          <div style="font-size: 3rem; margin-bottom: 8px;">⚔️</div>
-          <h2 class="gradient-text" style="font-size: 1.8rem; margin-bottom: 6px;">UPSC Battle Arena</h2>
-          <p style="color: var(--text-secondary); font-size: 0.95rem;">
-            Practice 6,215 MCQs & compete live with friends
-          </p>
-        </div>
+  function buildUserListHTML(userList, query = '') {
+    const q = query.toLowerCase().trim();
+    const filtered = q ? userList.filter(u => u.name.toLowerCase().includes(q)) : userList;
 
-        <div style="display: flex; gap: 8px; margin-bottom: 24px; background: rgba(0,0,0,0.25); padding: 4px; border-radius: var(--radius-md);">
-          <button id="tab-login" class="btn ${hasUsers ? 'btn-primary' : 'btn-glass'} w-full" style="padding: 8px;">Sign In</button>
-          <button id="tab-register" class="btn ${!hasUsers ? 'btn-primary' : 'btn-glass'} w-full" style="padding: 8px;">Register</button>
-        </div>
-
-        <!-- Login Form -->
-        <div id="form-login" style="display: ${hasUsers ? 'block' : 'none'};">
-          <div class="form-group">
-            <label class="form-label">Select Friend</label>
-            <select id="login-user-select" class="form-select">
-              ${users.map(u => `<option value="${u.id}">${u.avatar} ${u.name}</option>`).join('')}
-            </select>
+    if (filtered.length === 0) {
+      return `
+        <div style="text-align: center; padding: 18px; color: var(--text-muted); font-size: 0.85rem; border: 1px dashed var(--border-subtle); border-radius: var(--radius-md);">
+          ${q ? `No friend found matching "<strong>${query}</strong>"` : 'No registered friends found yet.'}
+          <div style="margin-top: 8px;">
+            <button type="button" id="btn-switch-to-register-inline" class="btn btn-gold btn-sm" style="font-size: 0.8rem; padding: 4px 10px;">
+              + Register "${query || 'New User'}"
+            </button>
           </div>
-
-          <div class="form-group">
-            <label class="form-label">4-Digit PIN</label>
-            <input type="password" id="login-pin" class="form-input text-center" maxlength="4" placeholder="••••" style="font-size: 1.8rem; letter-spacing: 8px; font-family: var(--font-mono);" />
-          </div>
-
-          <button id="btn-submit-login" class="btn btn-primary w-full btn-lg mt-4">
-            Enter Battle Arena 🚀
-          </button>
         </div>
+      `;
+    }
 
-        <!-- Register Form -->
-        <div id="form-register" style="display: ${!hasUsers ? 'block' : 'none'};">
-          <div class="form-group">
-            <label class="form-label">Your Name</label>
-            <input type="text" id="reg-name" class="form-input" placeholder="e.g. Vishnu, Priya, Amit" maxlength="25" />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Choose Avatar</label>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;" id="avatar-picker">
-              ${AVATARS.map((av, idx) => `
-                <button type="button" class="btn btn-glass btn-icon avatar-btn ${idx === 0 ? 'selected-avatar' : ''}" data-avatar="${av}" style="font-size: 1.3rem; border: ${idx === 0 ? '2px solid var(--primary)' : '1px solid var(--border-subtle)'};">
-                  ${av}
-                </button>
-              `).join('')}
+    return `
+      <div style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; padding-right: 4px;" id="user-select-list">
+        ${filtered.map(u => {
+          const isSel = u.id === selectedUserId || (!selectedUserId && filtered[0].id === u.id);
+          if (isSel && !selectedUserId) selectedUserId = u.id;
+          return `
+            <div class="user-card-item ${isSel ? 'selected' : ''}" data-user-id="${u.id}" data-user-name="${u.name}" style="cursor: pointer; padding: 10px 14px; border-radius: var(--radius-md); background: ${isSel ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.04)'}; border: 1px solid ${isSel ? 'var(--primary)' : 'var(--border-subtle)'}; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s ease;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="font-size: 1.4rem;">${u.avatar || '🎯'}</div>
+                <div>
+                  <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">${u.name}</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">${(u.stats?.battlesWon || 0)} Wins • 🔥 ${u.stats?.dailyStreak || 1}d Streak</div>
+                </div>
+              </div>
+              <div>
+                ${isSel ? '<span style="color: var(--primary); font-size: 1.1rem; font-weight: 900;">✓</span>' : ''}
+              </div>
             </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  function renderFullUI() {
+    mainView.innerHTML = `
+      <div style="max-width: 440px; margin: 30px auto;" class="glass-card">
+        <div style="padding: 28px 24px;">
+          <div class="text-center mb-4">
+            <div style="font-size: 3rem; margin-bottom: 8px; animation: pulse-fire 2s infinite alternate;">⚔️</div>
+            <h2 class="gradient-text" style="font-size: 1.8rem; margin-bottom: 4px;">UPSC Battle Arena</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">
+              6,215 Curated MCQs • Live 3-Player Clashes
+            </p>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Set 4-Digit Secret PIN</label>
-            <input type="password" id="reg-pin" class="form-input text-center" maxlength="4" placeholder="••••" style="font-size: 1.8rem; letter-spacing: 8px; font-family: var(--font-mono);" />
-            <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px;">Used for fast, passwordless login on this device</small>
+          <div style="display: flex; gap: 8px; margin-bottom: 22px; background: rgba(0,0,0,0.25); padding: 4px; border-radius: var(--radius-md);">
+            <button id="tab-login" class="btn ${activeTab === 'login' ? 'btn-primary' : 'btn-glass'} w-full" style="padding: 8px; font-weight: 700;">Sign In</button>
+            <button id="tab-register" class="btn ${activeTab === 'register' ? 'btn-primary' : 'btn-glass'} w-full" style="padding: 8px; font-weight: 700;">Register</button>
           </div>
 
-          <button id="btn-submit-register" class="btn btn-gold w-full btn-lg mt-4">
-            Create Profile & Start 👑
-          </button>
+          <!-- Sign In Form -->
+          <div id="form-login" style="display: ${activeTab === 'login' ? 'block' : 'none'};">
+            <!-- Search / Select Friend -->
+            <div class="form-group mb-2">
+              <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Select or Search Friend</span>
+                <span id="cloud-sync-status" style="font-size: 0.72rem; color: #34d399;">● Cloud Synced</span>
+              </label>
+              <div style="position: relative; margin-bottom: 8px;">
+                <input type="text" id="login-search-input" class="form-input" placeholder="🔍 Type friend name to search..." style="padding-left: 14px; font-size: 0.9rem;" autocomplete="off" />
+              </div>
+            </div>
+
+            <!-- Friend Cards List -->
+            <div class="form-group mb-4" id="user-cards-container">
+              ${buildUserListHTML(users)}
+            </div>
+
+            <!-- Also include standard dropdown for convenience -->
+            <div class="form-group" style="display: none;">
+              <select id="login-user-select" class="form-select">
+                ${users.map(u => `<option value="${u.id}" ${u.id === selectedUserId ? 'selected' : ''}>${u.avatar} ${u.name}</option>`).join('')}
+              </select>
+            </div>
+
+            <!-- PIN Input -->
+            <div class="form-group mb-4">
+              <label class="form-label">4-Digit Secret PIN</label>
+              <input type="password" id="login-pin" class="form-input text-center" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="••••" style="font-size: 1.8rem; letter-spacing: 8px; font-family: var(--font-mono);" />
+            </div>
+
+            <button id="btn-submit-login" class="btn btn-primary w-full btn-lg">
+              Enter Battle Arena 🚀
+            </button>
+          </div>
+
+          <!-- Register Form -->
+          <div id="form-register" style="display: ${activeTab === 'register' ? 'block' : 'none'};">
+            <div class="form-group mb-3">
+              <label class="form-label">Your Name</label>
+              <input type="text" id="reg-name" class="form-input" placeholder="e.g. Vishnu, Priya, Amit" maxlength="25" />
+            </div>
+
+            <div class="form-group mb-3">
+              <label class="form-label">Choose Avatar</label>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;" id="avatar-picker">
+                ${AVATARS.map((av, idx) => `
+                  <button type="button" class="btn btn-glass btn-icon avatar-btn ${idx === 0 ? 'selected-avatar' : ''}" data-avatar="${av}" style="font-size: 1.3rem; border: ${idx === 0 ? '2px solid var(--primary)' : '1px solid var(--border-subtle)'};">
+                    ${av}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="form-group mb-4">
+              <label class="form-label">Set 4-Digit Secret PIN</label>
+              <input type="password" id="reg-pin" class="form-input text-center" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="••••" style="font-size: 1.8rem; letter-spacing: 8px; font-family: var(--font-mono);" />
+              <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">Used for fast, passwordless login across all devices</small>
+            </div>
+
+            <button id="btn-submit-register" class="btn btn-gold w-full btn-lg">
+              Create Profile & Start 👑
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
 
-  // Avatar picker logic
-  let selectedAvatar = AVATARS[0];
-  document.querySelectorAll('.avatar-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      sounds.click();
-      document.querySelectorAll('.avatar-btn').forEach(b => b.style.border = '1px solid var(--border-subtle)');
-      btn.style.border = '2px solid var(--primary)';
-      selectedAvatar = btn.getAttribute('data-avatar');
+    bindEvents();
+  }
+
+  function attachUserCardClickListeners() {
+    document.querySelectorAll('.user-card-item').forEach(card => {
+      card.addEventListener('click', () => {
+        sounds.click();
+        selectedUserId = card.getAttribute('data-user-id');
+        const userName = card.getAttribute('data-user-name');
+        
+        const searchInput = document.getElementById('login-search-input');
+        if (searchInput) searchInput.value = userName;
+
+        const selectEl = document.getElementById('login-user-select');
+        if (selectEl) selectEl.value = selectedUserId;
+
+        // Re-render user cards list to show selected checkmark
+        const container = document.getElementById('user-cards-container');
+        if (container) {
+          container.innerHTML = buildUserListHTML(users, searchInput?.value || '');
+          attachUserCardClickListeners();
+        }
+
+        // Focus PIN input automatically
+        document.getElementById('login-pin')?.focus();
+      });
     });
-  });
 
-  // Tab switching
-  const tabLogin = document.getElementById('tab-login');
-  const tabRegister = document.getElementById('tab-register');
-  const formLogin = document.getElementById('form-login');
-  const formRegister = document.getElementById('form-register');
+    document.getElementById('btn-switch-to-register-inline')?.addEventListener('click', () => {
+      sounds.click();
+      activeTab = 'register';
+      const searchVal = document.getElementById('login-search-input')?.value || '';
+      renderFullUI();
+      const nameInput = document.getElementById('reg-name');
+      if (nameInput) {
+        nameInput.value = searchVal;
+        nameInput.focus();
+      }
+    });
+  }
 
-  tabLogin.addEventListener('click', () => {
-    sounds.click();
-    tabLogin.className = 'btn btn-primary w-full';
-    tabRegister.className = 'btn btn-glass w-full';
-    formLogin.style.display = 'block';
-    formRegister.style.display = 'none';
-  });
+  function bindEvents() {
+    // Avatar picker
+    let selectedAvatar = AVATARS[0];
+    document.querySelectorAll('.avatar-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        sounds.click();
+        document.querySelectorAll('.avatar-btn').forEach(b => b.style.border = '1px solid var(--border-subtle)');
+        btn.style.border = '2px solid var(--primary)';
+        selectedAvatar = btn.getAttribute('data-avatar');
+      });
+    });
 
-  tabRegister.addEventListener('click', () => {
-    sounds.click();
-    tabRegister.className = 'btn btn-primary w-full';
-    tabLogin.className = 'btn btn-glass w-full';
-    formRegister.style.display = 'block';
-    formLogin.style.display = 'none';
-  });
+    // Tab switching
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const formLogin = document.getElementById('form-login');
+    const formRegister = document.getElementById('form-register');
 
-  // Login handler
-  document.getElementById('btn-submit-login')?.addEventListener('click', async () => {
-    sounds.click();
-    const userId = document.getElementById('login-user-select')?.value;
-    const pin = document.getElementById('login-pin')?.value;
-    try {
-      await Auth.login(userId, pin);
-      window.location.hash = '#dashboard';
-    } catch (err) {
-      sounds.wrong();
-      showToast(err.message, 'error');
+    tabLogin?.addEventListener('click', () => {
+      sounds.click();
+      activeTab = 'login';
+      tabLogin.className = 'btn btn-primary w-full';
+      tabRegister.className = 'btn btn-glass w-full';
+      formLogin.style.display = 'block';
+      formRegister.style.display = 'none';
+    });
+
+    tabRegister?.addEventListener('click', () => {
+      sounds.click();
+      activeTab = 'register';
+      tabRegister.className = 'btn btn-primary w-full';
+      tabLogin.className = 'btn btn-glass w-full';
+      formRegister.style.display = 'block';
+      formLogin.style.display = 'none';
+    });
+
+    // Search filter input listener
+    const searchInput = document.getElementById('login-search-input');
+    searchInput?.addEventListener('input', (e) => {
+      const q = e.target.value;
+      const container = document.getElementById('user-cards-container');
+      if (container) {
+        container.innerHTML = buildUserListHTML(users, q);
+        attachUserCardClickListeners();
+      }
+    });
+
+    // Login submit
+    document.getElementById('btn-submit-login')?.addEventListener('click', async () => {
+      sounds.click();
+      const searchVal = document.getElementById('login-search-input')?.value?.trim() || '';
+      const selectedId = selectedUserId || document.getElementById('login-user-select')?.value;
+      const pin = document.getElementById('login-pin')?.value;
+      
+      const targetUserIdentifier = selectedId || searchVal;
+
+      try {
+        await Auth.login(targetUserIdentifier, pin);
+        window.location.hash = '#dashboard';
+      } catch (err) {
+        sounds.wrong();
+        showToast(err.message, 'error');
+      }
+    });
+
+    // Auto submit on 4th digit in PIN
+    document.getElementById('login-pin')?.addEventListener('input', (e) => {
+      if (e.target.value.length === 4) {
+        document.getElementById('btn-submit-login')?.click();
+      }
+    });
+
+    // Register submit
+    document.getElementById('btn-submit-register')?.addEventListener('click', async () => {
+      sounds.click();
+      const name = document.getElementById('reg-name')?.value;
+      const pin = document.getElementById('reg-pin')?.value;
+      try {
+        await Auth.register(name, pin, selectedAvatar);
+        window.location.hash = '#dashboard';
+      } catch (err) {
+        sounds.wrong();
+        showToast(err.message, 'error');
+      }
+    });
+
+    attachUserCardClickListeners();
+  }
+
+  // Initial render
+  renderFullUI();
+
+  // Background cloud sync to immediately populate users if this is a fresh browser/device
+  Auth.syncCloudUsers().then(cloudUsers => {
+    if (cloudUsers && cloudUsers.length > 0) {
+      users = cloudUsers;
+      if (!selectedUserId && users[0]) selectedUserId = users[0].id;
+      const container = document.getElementById('user-cards-container');
+      const searchInput = document.getElementById('login-search-input');
+      if (container) {
+        container.innerHTML = buildUserListHTML(users, searchInput?.value || '');
+        attachUserCardClickListeners();
+      }
     }
   });
 
-  // Register handler
-  document.getElementById('btn-submit-register')?.addEventListener('click', async () => {
-    sounds.click();
-    const name = document.getElementById('reg-name')?.value;
-    const pin = document.getElementById('reg-pin')?.value;
-    try {
-      await Auth.register(name, pin, selectedAvatar);
-      window.location.hash = '#dashboard';
-    } catch (err) {
-      sounds.wrong();
-      showToast(err.message, 'error');
+  // Subscribe to real-time cloud user additions
+  UserService.subscribeToUsers((cloudUsers) => {
+    if (cloudUsers && cloudUsers.length > 0) {
+      users = cloudUsers;
+      if (!selectedUserId && users[0]) selectedUserId = users[0].id;
+      const container = document.getElementById('user-cards-container');
+      const searchInput = document.getElementById('login-search-input');
+      if (container) {
+        container.innerHTML = buildUserListHTML(users, searchInput?.value || '');
+        attachUserCardClickListeners();
+      }
     }
   });
 }

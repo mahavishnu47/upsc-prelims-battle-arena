@@ -231,3 +231,52 @@ export const BattleService = {
     peerBus.set(path, room);
   }
 };
+
+export const UserService = {
+  async saveUserToCloud(user) {
+    if (firebaseDb) {
+      try {
+        await firebaseDb.ref(`users/${user.id}`).set(user);
+      } catch (e) {
+        console.warn("Could not save user to cloud:", e);
+      }
+    }
+    peerBus.set(`users/${user.id}`, user);
+  },
+
+  async getAllUsers() {
+    if (firebaseDb) {
+      try {
+        const snap = await firebaseDb.ref('users').once('value');
+        const val = snap.val();
+        if (val) {
+          return Object.values(val);
+        }
+      } catch (e) {
+        console.warn("Could not fetch cloud users:", e);
+      }
+    }
+    return [];
+  },
+
+  subscribeToUsers(callback) {
+    if (firebaseDb) {
+      try {
+        const ref = firebaseDb.ref('users');
+        const fbCb = (snapshot) => {
+          const val = snapshot.val();
+          if (val) {
+            callback(Object.values(val));
+          } else {
+            callback([]);
+          }
+        };
+        ref.on('value', fbCb);
+        return () => ref.off('value', fbCb);
+      } catch (e) {
+        console.warn("Users subscription error:", e);
+      }
+    }
+    return () => {};
+  }
+};
