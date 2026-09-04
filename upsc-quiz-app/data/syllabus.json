@@ -1,0 +1,1214 @@
+{
+  "metadata": {
+    "total_questions": 6215,
+    "total_subjects": 11,
+    "total_microthemes": 186,
+    "generated_at": "all_6215_questions"
+  },
+  "subjects": [
+    {
+      "name": "Polity",
+      "icon": "🏛️",
+      "color": "#34d399",
+      "total_questions": 695,
+      "microthemes": [
+        {
+          "id": "mt-001",
+          "name": "Political Theory",
+          "total": 687,
+          "yield": "high"
+        },
+        {
+          "id": "mt-002",
+          "name": "Fundamental Rights and Duties",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-003",
+          "name": "Judiciary",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-004",
+          "name": "DPSP",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-005",
+          "name": "Schedules/Parts",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-006",
+          "name": "Union and State Executive",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-007",
+          "name": "ParliamentXProcedures",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-009",
+          "name": "Local Self-Government",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-010",
+          "name": "Nature of Bills",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-008",
+          "name": "5th & 6th Schedules",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-011",
+          "name": "Non-Constitutional/Statutory Bodies",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-012",
+          "name": "Amendment",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-014",
+          "name": "Constitutional Bodies",
+          "total": 7,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-015",
+          "name": "Governor",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-013",
+          "name": "ParliamentXHouses",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-017",
+          "name": "ParliamentXBudget",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-019",
+          "name": "ParliamentXPresiding Officers",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-020",
+          "name": "President Powers",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-021",
+          "name": "“RPA, Elections”",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-016",
+          "name": "Federalism",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-018",
+          "name": "ParliamentXCommittees",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-022",
+          "name": "Political Parties",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-023",
+          "name": "Preamble",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-024",
+          "name": "President Election",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-025",
+          "name": "Alternate Dispute Resolution",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-026",
+          "name": "Emergency",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-027",
+          "name": "Attorney General",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-028",
+          "name": "Writs",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-029",
+          "name": "Citizenship",
+          "total": 1,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-030",
+          "name": "States Reorganization",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-031",
+          "name": "Tribunals",
+          "total": 0,
+          "yield": "standard"
+        }
+      ]
+    },
+    {
+      "name": "Economics",
+      "icon": "📈",
+      "color": "#60a5fa",
+      "total_questions": 431,
+      "microthemes": [
+        {
+          "id": "mt-032",
+          "name": "RBI Functions/Monetary Policy",
+          "total": 426,
+          "yield": "high"
+        },
+        {
+          "id": "mt-033",
+          "name": "Fiscal Policy and Budget",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-034",
+          "name": "Economic Growth",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-035",
+          "name": "Banking and Finance",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-036",
+          "name": "Trade",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-037",
+          "name": "Finance/Capital Market",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-039",
+          "name": "Infrastructure",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-040",
+          "name": "National income accounting and Exchange rate",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-038",
+          "name": "GST",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-041",
+          "name": "Inflation",
+          "total": 5,
+          "yield": "high"
+        },
+        {
+          "id": "mt-042",
+          "name": "Investment",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-043",
+          "name": "Bonds",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-044",
+          "name": "Differentiated Banks",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-045",
+          "name": "Index",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-046",
+          "name": "Digitalization of Economy",
+          "total": 0,
+          "yield": "medium"
+        }
+      ]
+    },
+    {
+      "name": "Geography",
+      "icon": "🌍",
+      "color": "#38bdf8",
+      "total_questions": 556,
+      "microthemes": [
+        {
+          "id": "mt-048",
+          "name": "River Systems",
+          "total": 536,
+          "yield": "high"
+        },
+        {
+          "id": "mt-049",
+          "name": "World Map related",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-051",
+          "name": "Minerals",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-047",
+          "name": "Economic/Human Geography",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-052",
+          "name": "Climatic/Geographic Region",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-054",
+          "name": "Oceanography",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-053",
+          "name": "Atmosphere",
+          "total": 17,
+          "yield": "high"
+        },
+        {
+          "id": "mt-055",
+          "name": "World MapXWater Bodies",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-056",
+          "name": "Indian GeographyXPhysiographic features",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-058",
+          "name": "Latitude,Longitude,Solstice",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-057",
+          "name": "Geomorphology",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-059",
+          "name": "Mountains/Hills",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-061",
+          "name": "Climatology",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-062",
+          "name": "ClimatologyXPressure Wind system",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-060",
+          "name": "Universe,Solar System,Earth",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-050",
+          "name": "Trees/Forests/Vegetation",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-063",
+          "name": "India Map related",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-064",
+          "name": "Arctic, Antarctic",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-065",
+          "name": "Cloudbursts",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-066",
+          "name": "Monsoon",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-172",
+          "name": "Biotechnology",
+          "total": 3,
+          "yield": "medium"
+        }
+      ]
+    },
+    {
+      "name": "Environment",
+      "icon": "🌿",
+      "color": "#4ade80",
+      "total_questions": 388,
+      "microthemes": [
+        {
+          "id": "mt-090",
+          "name": "PollutionXSources",
+          "total": 375,
+          "yield": "high"
+        },
+        {
+          "id": "mt-091",
+          "name": "International Org,TreatiesXEnvironment",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-093",
+          "name": "SpeciesXPeculiar features",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-092",
+          "name": "Trees/Forests/Vegetation",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-095",
+          "name": "Ecological Theory",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-096",
+          "name": "Environmental organisations",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-094",
+          "name": "National Parks",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-098",
+          "name": "Environmental Acts",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-099",
+          "name": "PollutionXimpact & remediation",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-097",
+          "name": "SpeciesXHabitat",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-101",
+          "name": "Fuels and biofertilizers",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-100",
+          "name": "Flagship SpeciesXCharacteristics and Behaviour",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-102",
+          "name": "Marine Ecosystem",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-103",
+          "name": "SpeciesXThreats and Conservation efforts",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-104",
+          "name": "Environmental Policies",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-105",
+          "name": "SpeciesXExotic/Invasive",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-106",
+          "name": "Climate Change",
+          "total": 7,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-107",
+          "name": "Wetlands",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-108",
+          "name": "Biodiversity",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-109",
+          "name": "PollutionXAcid Rain",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-110",
+          "name": "UNFCCC/IPCC",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-172",
+          "name": "Biotechnology",
+          "total": 6,
+          "yield": "medium"
+        }
+      ]
+    },
+    {
+      "name": "Science & Technology",
+      "icon": "🔬",
+      "color": "#a78bfa",
+      "total_questions": 730,
+      "microthemes": [
+        {
+          "id": "mt-158",
+          "name": "PhysicsXGeneral",
+          "total": 700,
+          "yield": "high"
+        },
+        {
+          "id": "mt-161",
+          "name": "Emerging TechXIT",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-162",
+          "name": "Genetics",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-164",
+          "name": "Specific Diseases",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-165",
+          "name": "Emerging TechXCommunication",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-159",
+          "name": "Defence",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-160",
+          "name": "Biology-Cell structure,microrganism",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-163",
+          "name": "Chemistry",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-167",
+          "name": "Space ProgramsXIND",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-166",
+          "name": "Emerging TechXMedical",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-168",
+          "name": "SpaceXTheory",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-169",
+          "name": "PhysicsXLight energy",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-170",
+          "name": "Space ProgramsXIntl",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-171",
+          "name": "Alternate Energy,Solar",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-172",
+          "name": "Biotechnology",
+          "total": 30,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-173",
+          "name": "Emerging TechXSpace",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-174",
+          "name": "Carbon based",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-175",
+          "name": "Emerging TechXEnvironment",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-177",
+          "name": "Vaccines",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-176",
+          "name": "nuclear energy",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-178",
+          "name": "EVs",
+          "total": 0,
+          "yield": "medium"
+        }
+      ]
+    },
+    {
+      "name": "Modern History",
+      "icon": "📜",
+      "color": "#f59e0b",
+      "total_questions": 1005,
+      "microthemes": [
+        {
+          "id": "mt-073",
+          "name": "Freedom Movement Personalities",
+          "total": 1005,
+          "yield": "high"
+        },
+        {
+          "id": "mt-074",
+          "name": "Constitutional Development",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-075",
+          "name": "British Policies",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-078",
+          "name": "Non-Congress Parties/Organizations",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-076",
+          "name": "Advent of Europeans",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-077",
+          "name": "National Movement 1927-1932",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-079",
+          "name": "MovementXSocial Reform",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-081",
+          "name": "Bengal Partition,Swadeshi Boycott Movement",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-082",
+          "name": "British PoliciesXEconomic",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-083",
+          "name": "National MovementXCripps Mission",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-084",
+          "name": "QIM",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-085",
+          "name": "Land Revenue Systems",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-086",
+          "name": "MovementsXTribals, Peasant",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-087",
+          "name": "Non-Cooperation Movement",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-088",
+          "name": "Revolutionary Movement",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-089",
+          "name": "Satyagrah",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-080",
+          "name": "Regional Kingdom",
+          "total": 0,
+          "yield": "standard"
+        }
+      ]
+    },
+    {
+      "name": "Arts & Culture",
+      "icon": "🎭",
+      "color": "#fb7185",
+      "total_questions": 158,
+      "microthemes": [
+        {
+          "id": "mt-128",
+          "name": "SourcesXLiterature",
+          "total": 158,
+          "yield": "high"
+        },
+        {
+          "id": "mt-129",
+          "name": "BuddhismXPhilosophy",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-131",
+          "name": "Medieval Administration",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-130",
+          "name": "ArchitectureXTemple",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-132",
+          "name": "Architecture-Cave and rockcut",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-134",
+          "name": "ArtXMusic",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-136",
+          "name": "JainismXphilosophy",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-133",
+          "name": "Regional Kingdom",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-135",
+          "name": "Bhakti and Sufi Movements",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-137",
+          "name": "AdministrationXGupta",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-138",
+          "name": "Art forms",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-139",
+          "name": "ArtXPainting",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-140",
+          "name": "Historical Sites",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-141",
+          "name": "Historical Terms",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-142",
+          "name": "Indus Valley Civilization",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-143",
+          "name": "BuddhismXPlaces",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-144",
+          "name": "KingdomXVijayanagara",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-146",
+          "name": "EmpiresXInvasion",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-147",
+          "name": "Foreign Travellers",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-149",
+          "name": "Historical SitesXAshoka",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-148",
+          "name": "Historical SitesXUNESCO",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-150",
+          "name": "Art formsXDance",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-151",
+          "name": "Festivals",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-152",
+          "name": "Historical SitesXPorts",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-145",
+          "name": "Buddhism and Jainism",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-154",
+          "name": "Medieval Architecture",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-155",
+          "name": "Philosophical Schools",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-156",
+          "name": "Vedic Culture",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-153",
+          "name": "KingdomXChola",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-157",
+          "name": "Ancient HistoryXscience and medicine",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-067",
+          "name": "Crop-specific details",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-068",
+          "name": "Farming Techniques",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-069",
+          "name": "SubsidiesXAgriculture",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-070",
+          "name": "Soils",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-072",
+          "name": "GM Crops",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-071",
+          "name": "SchemeXRural/Agri",
+          "total": 0,
+          "yield": "standard"
+        }
+      ]
+    },
+    {
+      "name": "International Relations",
+      "icon": "🌐",
+      "color": "#2dd4bf",
+      "total_questions": 323,
+      "microthemes": [
+        {
+          "id": "mt-112",
+          "name": "International Org,TreatiesXEconomy",
+          "total": 323,
+          "yield": "high"
+        },
+        {
+          "id": "mt-111",
+          "name": "Conflict Zones/Areas of Interest broad-based",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-113",
+          "name": "International Funding Agencies",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-114",
+          "name": "United Nations and its Agencies",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-115",
+          "name": "Regional GroupingsXNeighbour",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-116",
+          "name": "International Reports, Indices & Summits",
+          "total": 0,
+          "yield": "high"
+        }
+      ]
+    },
+    {
+      "name": "Governance",
+      "icon": "⚖️",
+      "color": "#fbbf24",
+      "total_questions": 162,
+      "microthemes": [
+        {
+          "id": "mt-117",
+          "name": "Domestic Bodies/Agencies",
+          "total": 162,
+          "yield": "high"
+        },
+        {
+          "id": "mt-118",
+          "name": "Govt. Programs",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-120",
+          "name": "SchemeXInsurance",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-121",
+          "name": "SchemeXRural/Agri",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-122",
+          "name": "SchemeXHealth",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-123",
+          "name": "SchemeXVulnerable",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-124",
+          "name": "SchemeXHR",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-125",
+          "name": "Various Acts",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-119",
+          "name": "Defence",
+          "total": 0,
+          "yield": "high"
+        },
+        {
+          "id": "mt-126",
+          "name": "SchemeXFinance",
+          "total": 0,
+          "yield": "standard"
+        },
+        {
+          "id": "mt-127",
+          "name": "SchemeXMNRE",
+          "total": 0,
+          "yield": "standard"
+        }
+      ]
+    },
+    {
+      "name": "Agriculture",
+      "icon": "🌾",
+      "color": "#a3e635",
+      "total_questions": 1,
+      "microthemes": [
+        {
+          "id": "mt-gen",
+          "name": "Personalities Associated with Specific Movements",
+          "total": 1,
+          "yield": "standard"
+        }
+      ]
+    },
+    {
+      "name": "General Studies & Misc",
+      "icon": "🧩",
+      "color": "#94a3b8",
+      "total_questions": 1766,
+      "microthemes": [
+        {
+          "id": "mt-179",
+          "name": "Sports",
+          "total": 1766,
+          "yield": "high"
+        },
+        {
+          "id": "mt-180",
+          "name": "National, International Prize",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-182",
+          "name": "Person in News",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-183",
+          "name": "Private Org",
+          "total": 0,
+          "yield": "medium"
+        },
+        {
+          "id": "mt-181",
+          "name": "Books",
+          "total": 0,
+          "yield": "standard"
+        }
+      ]
+    }
+  ]
+}

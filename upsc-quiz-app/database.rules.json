@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "battles": {
+      "$battleId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "daily": {
+      "$date": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "users": {
+      "$userId": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+}

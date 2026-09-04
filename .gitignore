@@ -1,0 +1,14 @@
+# Node / Tools
+node_modules/
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+
+# Local cache / raw dumps
+data/portal_data.raw.js
+data/all_exams_prelims.csv
+data/portal_data.json

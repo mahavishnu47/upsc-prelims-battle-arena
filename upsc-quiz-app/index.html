@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏛️ UPSC Prelims Battle Arena — 3-Friend Competitive MCQ Quiz</title>
+  <meta name="description" content="Compete with friends in real-time on 6,215 curated UPSC Prelims MCQs across 183 microthemes with negative marking, syllabus tracking, and daily streaks.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="./css/style.css">
+
+  <!-- Official Firebase SDK (v9 Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+  <div id="app-container">
+    <!-- App Top Navigation Bar -->
+    <header class="app-header">
+      <a href="#dashboard" class="logo-brand">
+        <div class="logo-icon">⚔️</div>
+        <div>
+          <div class="logo-text gradient-primary">UPSC BATTLE ARENA</div>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Links -->
+      <nav class="nav-links desktop-nav" id="main-nav">
+        <a href="#dashboard" class="nav-btn" data-route="dashboard">
+          <span>🏠</span><span class="nav-text">Arena</span>
+        </a>
+        <a href="#create-battle" class="nav-btn" data-route="create-battle">
+          <span>⚔️</span><span class="nav-text">New Battle</span>
+        </a>
+        <a href="#daily" class="nav-btn" data-route="daily">
+          <span>🔥</span><span class="nav-text">Daily Quiz</span>
+        </a>
+        <a href="#syllabus" class="nav-btn" data-route="syllabus">
+          <span>📚</span><span class="nav-text">Syllabus</span>
+        </a>
+        <a href="#leaderboard" class="nav-btn" data-route="leaderboard">
+          <span>🏆</span><span class="nav-text">Ranks</span>
+        </a>
+        <a href="#profile" class="nav-btn" data-route="profile">
+          <span>👤</span><span class="nav-text">Profile</span>
+        </a>
+      </nav>
+
+      <!-- User Profile Header Widget -->
+      <div id="header-user-widget">
+        <!-- Injected dynamically by app.js -->
+      </div>
+    </header>
+
+    <!-- Main Dynamic View Container -->
+    <main class="app-content" id="main-view">
+      <!-- Injected by router / app.js -->
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav" id="mobile-nav">
+      <a href="#dashboard" class="mobile-nav-item" data-route="dashboard">
+        <span class="mobile-nav-icon">🏠</span>
+        <span class="mobile-nav-label">Arena</span>
+      </a>
+      <a href="#create-battle" class="mobile-nav-item" data-route="create-battle">
+        <span class="mobile-nav-icon">⚔️</span>
+        <span class="mobile-nav-label">Battle</span>
+      </a>
+      <a href="#daily" class="mobile-nav-item" data-route="daily">
+        <span class="mobile-nav-icon">🔥</span>
+        <span class="mobile-nav-label">Daily</span>
+      </a>
+      <a href="#syllabus" class="mobile-nav-item" data-route="syllabus">
+        <span class="mobile-nav-icon">📚</span>
+        <span class="mobile-nav-label">Syllabus</span>
+      </a>
+      <a href="#leaderboard" class="mobile-nav-item" data-route="leaderboard">
+        <span class="mobile-nav-icon">🏆</span>
+        <span class="mobile-nav-label">Ranks</span>
+      </a>
+      <a href="#profile" class="mobile-nav-item" data-route="profile">
+        <span class="mobile-nav-icon">👤</span>
+        <span class="mobile-nav-label">Profile</span>
+      </a>
+    </nav>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container"></div>
+  </div>
+
+  <!-- Application Bootstrap -->
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
