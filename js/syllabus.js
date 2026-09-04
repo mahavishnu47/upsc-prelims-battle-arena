@@ -12,13 +12,42 @@ export const SyllabusTracker = {
    */
   async getSubjectProgress(userId) {
     const syllabus = await loadSyllabus();
-    const userProgress = LocalDB.getUserSyllabusProgress(userId);
+    let userProgress = LocalDB.getUserSyllabusProgress(userId);
+
+    // Sync with Firebase cloud progress if available
+    try {
+      const cloudProgress = await peerBus.getAsync(`syllabus_progress/${userId}`);
+      if (cloudProgress && typeof cloudProgress === 'object') {
+        const cloudAttempted = Object.keys(cloudProgress.attempted || {}).length;
+        const localAttempted = Object.keys(userProgress.attempted || {}).length;
+        if (cloudAttempted >= localAttempted) {
+          userProgress = {
+            attempted: { ...(userProgress.attempted || {}), ...(cloudProgress.attempted || {}) },
+            correct: { ...(userProgress.correct || {}), ...(cloudProgress.correct || {}) }
+          };
+          LocalDB.saveUserSyllabusProgress(userId, userProgress);
+        }
+      }
+    } catch (e) {
+      console.warn("Cloud progress sync note:", e);
+    }
+
     const attemptedMap = userProgress.attempted || {};
     const correctMap = userProgress.correct || {};
 
     let grandTotal = 0;
-    const grandAttempted = Object.keys(attemptedMap).length;
-    const grandCorrect = Object.keys(correctMap).length;
+    let grandAttempted = Object.keys(attemptedMap).length;
+    let grandCorrect = Object.keys(correctMap).length;
+
+    // Check user stats for any additional attempts from battles/daily
+    const registeredUser = LocalDB.getRegisteredUsers().find(u => u.id === userId);
+    const stats = registeredUser?.stats || {};
+    if ((stats.questionsAttempted || 0) > grandAttempted) {
+      grandAttempted = Number(stats.questionsAttempted);
+    }
+    if ((stats.questionsCorrect || 0) > grandCorrect) {
+      grandCorrect = Number(stats.questionsCorrect);
+    }
 
     const subjectsSummary = (syllabus.subjects || []).map(sub => {
       const subTotal = sub.total_questions || 0;
@@ -56,6 +85,9 @@ export const SyllabusTracker = {
           }
         }
 
+        const rawMtPct = mtTotal > 0 ? ((Math.min(mtTotal, mtAttempted) / mtTotal) * 100) : (mtAttempted > 0 ? 100 : 0);
+        const mtPct = rawMtPct > 0 && rawMtPct < 1 ? Number(rawMtPct.toFixed(1)) : Math.round(rawMtPct);
+
         return {
           id: mt.id,
           name: mt.name,
@@ -63,9 +95,12 @@ export const SyllabusTracker = {
           total: mtTotal,
           attempted: mtAttempted,
           correct: mtCorrect,
-          pct: mtTotal > 0 ? Math.round((Math.min(mtTotal, mtAttempted) / mtTotal) * 100) : (mtAttempted > 0 ? 100 : 0)
+          pct: mtPct
         };
       });
+
+      const rawSubPct = subTotal > 0 ? ((Math.min(subTotal, subAttempted) / subTotal) * 100) : (subAttempted > 0 ? 100 : 0);
+      const subPct = rawSubPct > 0 && rawSubPct < 1 ? Number(rawSubPct.toFixed(1)) : Math.round(rawSubPct);
 
       return {
         name: sub.name,
@@ -74,18 +109,29 @@ export const SyllabusTracker = {
         total: subTotal,
         attempted: subAttempted,
         correct: subCorrect,
-        pct: subTotal > 0 ? Math.round((Math.min(subTotal, subAttempted) / subTotal) * 100) : (subAttempted > 0 ? 100 : 0),
+        pct: subPct,
         accuracy: subAttempted > 0 ? Math.round((subCorrect / subAttempted) * 100) : 0,
         microthemes
       };
     });
 
+    const totalQuestions = grandTotal || 6215;
+    let overallPct = 0;
+    if (totalQuestions > 0 && grandAttempted > 0) {
+      const rawPct = (grandAttempted / totalQuestions) * 100;
+      overallPct = rawPct < 1 ? Number(rawPct.toFixed(1)) : Math.round(rawPct);
+    }
+
+    const overallAccuracy = grandAttempted > 0 
+      ? Math.round((grandCorrect / grandAttempted) * 100) 
+      : 0;
+
     return {
-      totalQuestions: grandTotal || 6215,
+      totalQuestions,
       attemptedQuestions: grandAttempted,
       correctQuestions: grandCorrect,
-      overallPct: grandTotal > 0 ? Math.round((grandAttempted / grandTotal) * 100) : (grandAttempted > 0 ? 1 : 0),
-      overallAccuracy: grandAttempted > 0 ? Math.round((grandCorrect / grandAttempted) * 100) : 0,
+      overallPct,
+      overallAccuracy,
       subjects: subjectsSummary
     };
   },

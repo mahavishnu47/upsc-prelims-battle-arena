@@ -489,6 +489,20 @@ async function renderDashboardView() {
   const progress = await SyllabusTracker.getSubjectProgress(user.id);
   const recentBattles = LocalDB.getRecentBattles(user.id);
   const mistakes = LocalDB.getUserMistakes(user.id);
+  const todayStr = getISTDateString();
+  const dailyStatus = DailyChallenge.hasUserCompletedToday(user.id, todayStr);
+
+  const dailyBtnHTML = dailyStatus.completed
+    ? `
+      <a href="#daily" class="btn btn-emerald btn-lg" style="background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.45); color: #34d399;">
+        <span>✅</span> Daily 10 (Completed • ${dailyStatus.submission?.score !== undefined ? formatMarks(dailyStatus.submission.score) : 'Done'})
+      </a>
+    `
+    : `
+      <a href="#daily" class="btn btn-gold btn-lg">
+        <span>🔥</span> Daily 10
+      </a>
+    `;
 
   mainView.innerHTML = `
     <!-- Top Welcome Banner with Quick Actions -->
@@ -509,9 +523,7 @@ async function renderDashboardView() {
           <a href="#create-battle" class="btn btn-primary btn-lg">
             <span>⚔️</span> Host Battle
           </a>
-          <a href="#daily" class="btn btn-gold btn-lg">
-            <span>🔥</span> Daily 10
-          </a>
+          ${dailyBtnHTML}
           ${mistakes.length > 0 ? `
             <a href="#practice-mistakes" class="btn btn-glass btn-lg" style="border-color: rgba(239,68,68,0.4); color: #fca5a5;">
               <span>📕</span> Practice Mistakes (${mistakes.length})
@@ -1204,6 +1216,7 @@ ${currentQ.question}
         renderCurrentQuestion();
       } else {
         // Player finished all questions
+        SyllabusTracker.recordQuestionAttempts(user.id, questions, localAnswers);
         renderWaitingScreen(currentRoomCache);
       }
     }, 850);
@@ -1569,6 +1582,8 @@ ${q.question}
   `;
 }
 
+let dailyUnsub = null;
+
 // ==========================================
 // 8. View: Daily Challenge (10 Questions at Midnight IST)
 // ==========================================
@@ -1576,23 +1591,22 @@ async function renderDailyView() {
   const user = Auth.getCurrentUser();
   if (!user) return router.navigate('#auth');
 
-  const todayStr = getISTDateString();
-  const dailyState = DailyChallenge.getDailyState(todayStr);
-  const mySubmission = dailyState.submissions[user.id];
-  const registeredUsers = LocalDB.getRegisteredUsers();
-  const secondsLeft = getSecondsUntilMidnightIST();
-
-  const hours = Math.floor(secondsLeft / 3600);
-  const minutes = Math.floor((secondsLeft % 3600) / 60);
-
-  function formatScoreText(score) {
-    const num = Number(score || 0);
-    return (num >= 0 ? '+' : '') + num.toFixed(2);
+  if (dailyUnsub) {
+    dailyUnsub();
+    dailyUnsub = null;
   }
+
+  const todayStr = getISTDateString();
+  const dailyState = await DailyChallenge.getDailyStateAsync(todayStr);
+  const mySubmissionCheck = DailyChallenge.hasUserCompletedToday(user.id, todayStr);
+  const mySubmission = dailyState.submissions?.[user.id] || mySubmissionCheck.submission;
+  const questions = await DailyChallenge.getDailyQuestions();
 
   if (!mySubmission) {
     // Has not attempted today's daily challenge yet
-    const questions = await DailyChallenge.getDailyQuestions();
+    const secondsLeft = getSecondsUntilMidnightIST();
+    const hours = Math.floor(secondsLeft / 3600);
+    const minutes = Math.floor((secondsLeft % 3600) / 60);
 
     mainView.innerHTML = `
       <div style="max-width: 680px; margin: 0 auto;">
@@ -1601,7 +1615,7 @@ async function renderDailyView() {
           <span class="badge badge-gold mb-2">Daily 10 Challenge • ${todayStr}</span>
           <h2 class="gradient-gold" style="font-size: 1.8rem; margin-bottom: 8px;">Today's UPSC Prelims Drill</h2>
           <p style="color: var(--text-secondary); font-size: 0.95rem; max-width: 500px; margin: 0 auto 24px auto;">
-            10 curated MCQs refreshed every midnight IST. Results are hidden until all 3 friends finish!
+            10 curated MCQs refreshed every midnight IST. Scores update live on today's leaderboard as friends complete!
           </p>
 
           <div class="glass-panel" style="padding: 16px; margin-bottom: 24px; display: inline-flex; gap: 24px;">
@@ -1629,45 +1643,235 @@ async function renderDailyView() {
       startDailyQuizFlow(questions, user);
     });
   } else {
-    // Already submitted
-    const isRevealed = dailyState.isRevealed;
-    const submittedUsers = Object.values(dailyState.submissions);
+    // User already completed today's quiz: Render Real-time Daily Leaderboard & Explanations!
+    renderDailyLeaderboardView(todayStr, questions, user);
+  }
+}
 
-    mainView.innerHTML = `
-      <div style="max-width: 640px; margin: 0 auto;">
-        <div class="glass-card" style="padding: 32px; text-align: center;">
-          <div style="font-size: 3.5rem; margin-bottom: 8px;">${isRevealed ? '🏆' : '🔒'}</div>
-          <span class="badge badge-primary mb-2">Daily 10 • ${todayStr}</span>
-          <h2 style="font-size: 1.8rem; margin-bottom: 8px;">
-            ${isRevealed ? "Today's Daily Leaderboard" : "Results Hidden Until All Friends Complete"}
-          </h2>
-          <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 24px;">
-            ${isRevealed ? "All friends completed today's challenge! Here are the standings:" : `You submitted! Waiting for ${Math.max(0, registeredUsers.length - submittedUsers.length)} friend(s) to finish.`}
-          </p>
+function renderDailyLeaderboardView(todayStr, questions, user) {
+  function buildLeaderboardHTML(state) {
+    const registeredUsers = LocalDB.getRegisteredUsers();
+    const submissions = state?.submissions || {};
 
-          <!-- Friend Submissions Status List -->
-          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; text-align: left;">
-            ${registeredUsers.map(u => {
-              const sub = dailyState.submissions[u.id];
+    const sortedCompleted = Object.values(submissions).sort((a, b) => {
+      const scoreDiff = (Number(b.score) || 0) - (Number(a.score) || 0);
+      if (scoreDiff !== 0) return scoreDiff;
+      return (a.completedAt || 0) - (b.completedAt || 0);
+    });
+
+    const completedUserIds = new Set(sortedCompleted.map(s => s.userId));
+    const pendingUsers = registeredUsers.filter(u => !completedUserIds.has(u.id));
+
+    const mySub = submissions[user.id] || DailyChallenge.hasUserCompletedToday(user.id, todayStr).submission;
+    const myRank = sortedCompleted.findIndex(s => s.userId === user.id) + 1;
+
+    return `
+      <div style="max-width: 860px; margin: 0 auto;">
+        <!-- Top Status Card -->
+        <div class="glass-card" style="padding: 28px 24px; margin-bottom: 24px; position: relative; overflow: hidden;">
+          <div style="position: absolute; right: -15px; top: -15px; font-size: 7rem; opacity: 0.05; pointer-events: none;">🏆</div>
+          <div class="flex-between" style="flex-wrap: wrap; gap: 16px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span class="badge badge-emerald">✅ Completed Today</span>
+                <span class="badge badge-gold">${todayStr}</span>
+              </div>
+              <h2 style="font-size: 1.7rem; margin-bottom: 4px;">Today's Daily 10 Leaderboard</h2>
+              <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                Scores update live in real-time as friends complete their daily drill.
+              </p>
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <a href="#dashboard" class="btn btn-glass">
+                <span>🏛️</span> Arena
+              </a>
+              <a href="#leaderboard" class="btn btn-primary">
+                <span>🏆</span> Overall Leaderboard
+              </a>
+            </div>
+          </div>
+
+          <!-- My Performance Banner -->
+          ${mySub ? `
+            <div class="glass-panel" style="margin-top: 20px; padding: 16px 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; align-items: center;">
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Your Rank</div>
+                <div style="font-size: 1.6rem; font-weight: 800; color: #fbbf24;">
+                  ${myRank === 1 ? '🥇 1st Place' : (myRank === 2 ? '🥈 2nd Place' : (myRank === 3 ? '🥉 3rd Place' : (myRank > 0 ? `#${myRank}` : 'Completed')))}
+                </div>
+              </div>
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Your Net Marks</div>
+                <div style="font-size: 1.6rem; font-weight: 800; color: ${Number(mySub.score || 0) >= 0 ? '#34d399' : '#f87171'};">
+                  ${formatMarks(mySub.score)}
+                </div>
+              </div>
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Correct / Attempted</div>
+                <div style="font-size: 1.4rem; font-weight: 700; color: var(--text-primary);">
+                  ${mySub.correctCount !== undefined ? `${mySub.correctCount} / 10` : '10 / 10'}
+                </div>
+              </div>
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Net Accuracy</div>
+                <div style="font-size: 1.4rem; font-weight: 700; color: #f472b6;">
+                  ${mySub.accuracy !== undefined ? `${mySub.accuracy}%` : '-'}
+                </div>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- Live Standings Table -->
+        <div class="glass-card" style="padding: 24px; margin-bottom: 28px;">
+          <div class="flex-between mb-4">
+            <h3 style="font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+              <span>⚡</span> Live Standings (${sortedCompleted.length} / ${registeredUsers.length} Finished)
+            </h3>
+            <span style="font-size: 0.8rem; color: #34d399; display: flex; align-items: center; gap: 4px;">
+              <span style="display: inline-block; width: 8px; height: 8px; background: #34d399; border-radius: 50%; animation: pulse-fire 1s infinite alternate;"></span> Live Real-Time
+            </span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            ${sortedCompleted.map((sub, idx) => {
+              const rank = idx + 1;
+              const isMe = sub.userId === user.id;
+              const rankBadge = rank === 1 ? '🥇' : (rank === 2 ? '🥈' : (rank === 3 ? '🥉' : `#${rank}`));
+              const marksNum = Number(sub.score || 0);
+
               return `
-                <div class="glass-panel" style="padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;">
-                  <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="font-size: 1.4rem;">${u.avatar}</div>
-                    <div style="font-weight: 700;">${u.name}</div>
+                <div class="glass-panel" style="padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid ${isMe ? 'var(--primary)' : (rank === 1 ? '#fbbf24' : 'transparent')}; background: ${isMe ? 'rgba(99, 102, 241, 0.12)' : ''};">
+                  <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="font-size: 1.25rem; font-weight: 800; min-width: 32px; text-align: center;">${rankBadge}</div>
+                    <div style="font-size: 1.6rem;">${sub.avatar || '🎯'}</div>
+                    <div>
+                      <div style="font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                        ${sub.name} ${isMe ? '<span class="badge badge-primary" style="font-size: 0.68rem; padding: 2px 6px;">YOU</span>' : ''}
+                      </div>
+                      <div style="font-size: 0.75rem; color: var(--text-muted);">
+                        ${sub.completedAt ? new Date(sub.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Completed'}
+                        ${sub.accuracy ? ` • ${sub.accuracy}% Accuracy` : ''}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    ${sub ? (isRevealed ? `<strong style="color: #fbbf24;">${formatScoreText(sub.score)} marks</strong>` : '<span class="badge badge-emerald">Done (Score Hidden 🔒)</span>') : '<span class="badge badge-gold">Pending...</span>'}
+
+                  <div style="text-align: right;">
+                    <div style="font-size: 1.25rem; font-weight: 800; color: ${marksNum >= 0 ? '#34d399' : '#f87171'};">
+                      ${formatMarks(marksNum)}
+                    </div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">
+                      ${sub.correctCount !== undefined ? `${sub.correctCount} Correct • ${sub.wrongCount || 0} Wrong` : '+2.0 / -0.66'}
+                    </div>
                   </div>
                 </div>
               `;
             }).join('')}
-          </div>
 
-          <a href="#dashboard" class="btn btn-glass">Return to Dashboard</a>
+            ${pendingUsers.map(u => `
+              <div class="glass-panel" style="padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; opacity: 0.65;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <div style="font-size: 1.1rem; min-width: 32px; text-align: center; color: var(--text-muted);">-</div>
+                  <div style="font-size: 1.4rem;">${u.avatar || '🎯'}</div>
+                  <div>
+                    <div style="font-weight: 600;">${u.name}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Yet to attempt today</div>
+                  </div>
+                </div>
+                <div>
+                  <span class="badge badge-gold" style="font-size: 0.75rem;">⏳ Pending</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
         </div>
+
+        <!-- Question Solutions & Explanations Review -->
+        ${questions && questions.length > 0 ? `
+          <div class="glass-card" style="padding: 24px;">
+            <h3 style="font-size: 1.15rem; margin-bottom: 18px; display: flex; align-items: center; gap: 8px;">
+              <span>📖</span> Today's Questions & Solutions Review (10 MCQs)
+            </h3>
+
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+              ${questions.map((q, idx) => {
+                const myAns = mySub?.answers?.[idx];
+                const selectedOpt = myAns?.selectedOption;
+                const isCorrect = myAns?.isCorrect;
+
+                return `
+                  <div class="glass-panel" style="padding: 18px; border-left: 4px solid ${isCorrect ? '#34d399' : (selectedOpt ? '#f87171' : 'var(--border-subtle)')};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
+                      <div style="display: flex; gap: 6px; align-items: center;">
+                        <span class="badge badge-primary">Q${idx + 1}</span>
+                        <span class="badge badge-emerald">${q.subject || 'Polity'}</span>
+                        <span class="badge badge-gold">${q.microtheme || 'Microtheme'}</span>
+                      </div>
+                      <div>
+                        ${selectedOpt ? (isCorrect ? '<span class="badge badge-emerald">✅ +2.00 Correct</span>' : '<span class="badge badge-ruby" style="background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4);">❌ -0.66 Wrong</span>') : '<span class="badge badge-gold">Not answered</span>'}
+                      </div>
+                    </div>
+
+                    <p style="font-weight: 600; line-height: 1.55; margin-bottom: 14px; font-size: 0.95rem; white-space: pre-wrap;">
+${q.question}
+                    </p>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; margin-bottom: 14px;">
+                      ${['A', 'B', 'C', 'D'].map(opt => {
+                        const optText = q[`option_${opt.toLowerCase()}`];
+                        if (!optText) return '';
+                        const isThisCorrect = opt === q.correct_answer;
+                        const isThisSelected = opt === selectedOpt;
+                        let bg = 'rgba(255,255,255,0.03)';
+                        let border = 'var(--border-subtle)';
+                        let color = 'inherit';
+
+                        if (isThisCorrect) {
+                          bg = 'rgba(16, 185, 129, 0.15)';
+                          border = 'rgba(16, 185, 129, 0.4)';
+                          color = '#34d399';
+                        } else if (isThisSelected && !isThisCorrect) {
+                          bg = 'rgba(239, 68, 68, 0.15)';
+                          border = 'rgba(239, 68, 68, 0.4)';
+                          color = '#fca5a5';
+                        }
+
+                        return `
+                          <div style="padding: 8px 12px; border-radius: 8px; background: ${bg}; border: 1px solid ${border}; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
+                            <strong style="color: ${color}; min-width: 18px;">${opt}.</strong>
+                            <span style="color: ${color};">${optText}</span>
+                            ${isThisCorrect ? '<span style="margin-left: auto; font-size: 0.75rem;">⭐ Correct</span>' : (isThisSelected ? '<span style="margin-left: auto; font-size: 0.75rem;">Selected</span>' : '')}
+                          </div>
+                        `;
+                      }).join('')}
+                    </div>
+
+                    ${q.explanation ? `
+                      <div style="background: rgba(99, 102, 241, 0.08); border-left: 3px solid var(--primary); padding: 10px 14px; border-radius: 6px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">
+                        <strong style="color: #a5b4fc;">💡 Solution & Explanation:</strong><br>
+                        ${q.explanation}
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        ` : ''}
       </div>
     `;
   }
+
+  const currentState = DailyChallenge.getDailyState(todayStr);
+  mainView.innerHTML = buildLeaderboardHTML(currentState);
+
+  // Subscribe to live daily room updates
+  dailyUnsub = DailyChallenge.subscribeDaily(todayStr, (updatedState) => {
+    if (updatedState) {
+      mainView.innerHTML = buildLeaderboardHTML(updatedState);
+    }
+  });
 }
 
 function startDailyQuizFlow(questions, user) {
@@ -1712,7 +1916,13 @@ function startDailyQuizFlow(questions, user) {
       stats.questionsCorrect = (stats.questionsCorrect || 0) + qCorrectCount;
       user.stats = stats;
 
-      DailyChallenge.submitDaily(user, answers, netScore);
+      DailyChallenge.submitDaily(user, answers, netScore, {
+        correctCount: qCorrectCount,
+        wrongCount,
+        accuracy: accuracyPct,
+        positiveMarks,
+        negativePenalty
+      });
       SyllabusTracker.recordQuestionAttempts(user.id, questions, answers);
       StreakSystem.updateDailyStreak(user);
 

@@ -46,43 +46,89 @@ export const DailyChallenge = {
   },
 
   /**
-   * Get daily challenge state for today
+   * Get daily challenge state for today (sync cached)
    */
   getDailyState(dateStr = getISTDateString()) {
     const path = `daily/${dateStr}`;
     const state = peerBus.get(path);
     return state || {
       date: dateStr,
-      submissions: {}, // { userId: { score, answers, completedAt, name, avatar } }
+      submissions: {}, // { userId: { score, answers, completedAt, name, avatar, correctCount, wrongCount, accuracy } }
       totalRequiredPlayers: 10,
-      isRevealed: false
+      isRevealed: true
     };
+  },
+
+  /**
+   * Get daily challenge state for today asynchronously from Firebase
+   */
+  async getDailyStateAsync(dateStr = getISTDateString()) {
+    const path = `daily/${dateStr}`;
+    try {
+      const state = await peerBus.getAsync(path);
+      if (state) return state;
+    } catch (e) {
+      console.warn("getDailyStateAsync note:", e);
+    }
+    return this.getDailyState(dateStr);
+  },
+
+  /**
+   * Check if specific user has already completed today's daily challenge
+   */
+  hasUserCompletedToday(userId, dateStr = getISTDateString()) {
+    if (!userId) return { completed: false, submission: null };
+    const state = this.getDailyState(dateStr);
+    const sub = state.submissions?.[userId];
+    if (sub) {
+      return { completed: true, submission: sub };
+    }
+    // Check marks history fallback
+    const history = LocalDB.getUserMarksHistory(userId);
+    const todayRecord = history.find(h => {
+      if (h.mode === 'Daily 10' && h.timestamp) {
+        const d = new Date(h.timestamp).toISOString().split('T')[0];
+        return d === dateStr;
+      }
+      return false;
+    });
+    if (todayRecord) {
+      return { completed: true, submission: todayRecord };
+    }
+    return { completed: false, submission: null };
+  },
+
+  /**
+   * Subscribe to live daily room updates
+   */
+  subscribeDaily(dateStr = getISTDateString(), callback) {
+    const path = `daily/${dateStr}`;
+    return peerBus.on(path, callback);
   },
 
   /**
    * Save user submission for today's daily challenge
    */
-  submitDaily(user, answers, totalScore) {
+  submitDaily(user, answers, totalScore, details = {}) {
     const dateStr = getISTDateString();
     const state = this.getDailyState(dateStr);
 
+    state.submissions = state.submissions || {};
     state.submissions[user.id] = {
       userId: user.id,
       name: user.name,
       avatar: user.avatar,
       score: totalScore,
       answers,
-      completedAt: Date.now()
+      completedAt: Date.now(),
+      correctCount: details.correctCount || 0,
+      wrongCount: details.wrongCount || 0,
+      accuracy: details.accuracy || 0,
+      positiveMarks: details.positiveMarks || 0,
+      negativePenalty: details.negativePenalty || 0
     };
 
-    // Auto-reveal if all registered players have submitted
-    const registeredUsers = LocalDB.getRegisteredUsers();
-    const expectedCount = Math.max(1, registeredUsers.length);
-    const submittedCount = Object.keys(state.submissions).length;
-
-    if (submittedCount >= expectedCount) {
-      state.isRevealed = true;
-    }
+    state.isRevealed = true;
 
     const path = `daily/${dateStr}`;
     peerBus.set(path, state);

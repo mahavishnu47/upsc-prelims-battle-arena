@@ -92,6 +92,22 @@ class PeerSyncBus {
     return d ? JSON.parse(d) : null;
   }
 
+  async getAsync(path) {
+    if (firebaseDb) {
+      try {
+        const snap = await firebaseDb.ref(path).once('value');
+        const val = snap.val();
+        if (val !== null) {
+          localStorage.setItem(`rtdb_${path}`, JSON.stringify(val));
+          return val;
+        }
+      } catch (e) {
+        console.warn("Firebase getAsync error:", e);
+      }
+    }
+    return this.get(path);
+  }
+
   on(path, callback) {
     if (!this.listeners.has(path)) {
       this.listeners.set(path, new Set());
