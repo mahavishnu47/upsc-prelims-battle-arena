@@ -1637,9 +1637,65 @@ function startDailyQuizFlow(questions, user) {
   function renderQ() {
     if (qIdx >= questions.length) {
       // Completed daily quiz
-      DailyChallenge.submitDaily(user, answers, score);
+      let qCorrectCount = 0;
+      let qAttemptedCount = 0;
+      let positiveMarks = 0;
+      let negativePenalty = 0;
+
+      for (const k in answers) {
+        qAttemptedCount++;
+        const ans = answers[k];
+        if (ans.isCorrect) {
+          qCorrectCount++;
+          positiveMarks += 2.0;
+        } else {
+          negativePenalty += 0.66;
+        }
+      }
+
+      positiveMarks = Math.round(positiveMarks * 100) / 100;
+      negativePenalty = Math.round(negativePenalty * 100) / 100;
+      const netScore = Math.round((positiveMarks - negativePenalty) * 100) / 100;
+      const wrongCount = qAttemptedCount - qCorrectCount;
+      const accuracyPct = qAttemptedCount > 0 ? Math.round((qCorrectCount / qAttemptedCount) * 100) : 0;
+
+      // Update user stats
+      const stats = user.stats || {};
+      stats.totalPoints = Math.round(((stats.totalPoints || 0) + netScore) * 100) / 100;
+      stats.questionsAttempted = (stats.questionsAttempted || 0) + qAttemptedCount;
+      stats.questionsCorrect = (stats.questionsCorrect || 0) + qCorrectCount;
+      user.stats = stats;
+
+      DailyChallenge.submitDaily(user, answers, netScore);
       SyllabusTracker.recordQuestionAttempts(user.id, questions, answers);
       StreakSystem.updateDailyStreak(user);
+
+      // Save to Marks History
+      LocalDB.addMarksHistoryRecord(user.id, {
+        mode: 'Daily 10',
+        subject: 'Daily Prelims Drill',
+        score: netScore,
+        positiveMarks,
+        negativePenalty,
+        correctCount: qCorrectCount,
+        wrongCount,
+        totalQuestions: questions.length,
+        accuracy: accuracyPct,
+        rank: 1,
+        opponents: []
+      });
+
+      LocalDB.addRecentBattle(user.id, {
+        battleId: 'daily_' + Date.now(),
+        subject: 'Daily 10 Challenge',
+        date: Date.now(),
+        score: netScore,
+        rank: 1,
+        won: true,
+        questionCount: questions.length
+      });
+
+      StreakSystem.saveUserUpdate(user);
       sounds.fanfare();
       renderDailyView();
       return;

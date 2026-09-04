@@ -4,6 +4,7 @@
  */
 
 import { loadSyllabus, LocalDB } from './storage.js';
+import { peerBus } from './firebase-service.js';
 
 export const SyllabusTracker = {
   /**
@@ -16,23 +17,38 @@ export const SyllabusTracker = {
     const correctMap = userProgress.correct || {};
 
     let grandTotal = 0;
-    let grandAttempted = 0;
-    let grandCorrect = 0;
+    const grandAttempted = Object.keys(attemptedMap).length;
+    const grandCorrect = Object.keys(correctMap).length;
 
-    const subjectsSummary = syllabus.subjects.map(sub => {
-      let subTotal = sub.total_questions || 0;
+    const subjectsSummary = (syllabus.subjects || []).map(sub => {
+      const subTotal = sub.total_questions || 0;
+      grandTotal += subTotal;
+
+      // Count all questions attempted in this subject
       let subAttempted = 0;
       let subCorrect = 0;
 
-      const microthemes = sub.microthemes.map(mt => {
+      for (const qId in attemptedMap) {
+        const item = attemptedMap[qId];
+        const isSubjectMatch = (item.subject && sub.name && item.subject.trim().toLowerCase() === sub.name.trim().toLowerCase()) ||
+          (sub.microthemes && sub.microthemes.some(mt => mt.id === item.microtheme_id || (mt.name && item.microtheme && mt.name.trim().toLowerCase() === item.microtheme.trim().toLowerCase())));
+
+        if (isSubjectMatch) {
+          subAttempted++;
+          if (correctMap[qId]) {
+            subCorrect++;
+          }
+        }
+      }
+
+      const microthemes = (sub.microthemes || []).map(mt => {
         const mtTotal = mt.total || 0;
         let mtAttempted = 0;
         let mtCorrect = 0;
 
-        // Count questions attempted in this microtheme
         for (const qId in attemptedMap) {
           const item = attemptedMap[qId];
-          if (item && (item.microtheme_id === mt.id || item.microtheme === mt.name)) {
+          if (item && (item.microtheme_id === mt.id || (item.microtheme && mt.name && item.microtheme.trim().toLowerCase() === mt.name.trim().toLowerCase()))) {
             mtAttempted++;
             if (correctMap[qId]) {
               mtCorrect++;
@@ -40,49 +56,42 @@ export const SyllabusTracker = {
           }
         }
 
-        subAttempted += mtAttempted;
-        subCorrect += mtCorrect;
-
         return {
           id: mt.id,
           name: mt.name,
           yield: mt.yield,
           total: mtTotal,
-          attempted: Math.min(mtTotal, mtAttempted),
+          attempted: mtAttempted,
           correct: mtCorrect,
-          pct: mtTotal > 0 ? Math.round((Math.min(mtTotal, mtAttempted) / mtTotal) * 100) : 0
+          pct: mtTotal > 0 ? Math.round((Math.min(mtTotal, mtAttempted) / mtTotal) * 100) : (mtAttempted > 0 ? 100 : 0)
         };
       });
-
-      grandTotal += subTotal;
-      grandAttempted += subAttempted;
-      grandCorrect += subCorrect;
 
       return {
         name: sub.name,
         icon: sub.icon || '📚',
         color: sub.color || '#6366f1',
         total: subTotal,
-        attempted: Math.min(subTotal, subAttempted),
+        attempted: subAttempted,
         correct: subCorrect,
-        pct: subTotal > 0 ? Math.round((Math.min(subTotal, subAttempted) / subTotal) * 100) : 0,
+        pct: subTotal > 0 ? Math.round((Math.min(subTotal, subAttempted) / subTotal) * 100) : (subAttempted > 0 ? 100 : 0),
         accuracy: subAttempted > 0 ? Math.round((subCorrect / subAttempted) * 100) : 0,
         microthemes
       };
     });
 
     return {
-      totalQuestions: grandTotal,
-      attemptedQuestions: Math.min(grandTotal, grandAttempted),
+      totalQuestions: grandTotal || 6215,
+      attemptedQuestions: grandAttempted,
       correctQuestions: grandCorrect,
-      overallPct: grandTotal > 0 ? Math.round((Math.min(grandTotal, grandAttempted) / grandTotal) * 100) : 0,
+      overallPct: grandTotal > 0 ? Math.round((grandAttempted / grandTotal) * 100) : (grandAttempted > 0 ? 1 : 0),
       overallAccuracy: grandAttempted > 0 ? Math.round((grandCorrect / grandAttempted) * 100) : 0,
       subjects: subjectsSummary
     };
   },
 
   /**
-   * Get comparative syllabus coverage among all 3 friends
+   * Get comparative syllabus coverage among all friends
    */
   async getFriendsComparison() {
     const users = LocalDB.getRegisteredUsers();
@@ -101,6 +110,7 @@ export const SyllabusTracker = {
    * Mark questions as attempted after a battle or daily quiz
    */
   recordQuestionAttempts(userId, questionList, answersMap) {
+    if (!userId || !questionList) return;
     const userProgress = LocalDB.getUserSyllabusProgress(userId);
     if (!userProgress.attempted) userProgress.attempted = {};
     if (!userProgress.correct) userProgress.correct = {};
@@ -108,18 +118,26 @@ export const SyllabusTracker = {
     questionList.forEach((q, idx) => {
       const ans = answersMap[idx];
       if (ans) {
-        userProgress.attempted[q.id] = {
-          subject: q.subject,
-          microtheme: q.microtheme,
-          microtheme_id: q.microtheme_id,
+        const qId = q.id || `q_${q.microtheme_id || q.microtheme || 'gen'}_${idx}`;
+        userProgress.attempted[qId] = {
+          id: qId,
+          subject: q.subject || 'Polity',
+          microtheme: q.microtheme || '',
+          microtheme_id: q.microtheme_id || '',
           attemptedAt: Date.now()
         };
         if (ans.isCorrect) {
-          userProgress.correct[q.id] = true;
+          userProgress.correct[qId] = true;
         }
       }
     });
 
     LocalDB.saveUserSyllabusProgress(userId, userProgress);
+
+    try {
+      peerBus.set(`syllabus_progress/${userId}`, userProgress);
+    } catch (e) {
+      console.warn("Cloud syllabus sync error:", e);
+    }
   }
 };
