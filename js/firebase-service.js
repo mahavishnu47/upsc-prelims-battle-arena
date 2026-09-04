@@ -145,6 +145,18 @@ export const BattleService = {
 
   async getRoom(battleId) {
     const path = `battles/${battleId}`;
+    if (firebaseDb) {
+      try {
+        const snapshot = await firebaseDb.ref(path).once('value');
+        const val = snapshot.val();
+        if (val) {
+          localStorage.setItem(`rtdb_${path}`, JSON.stringify(val));
+          return val;
+        }
+      } catch (e) {
+        console.warn("Firebase getRoom error:", e);
+      }
+    }
     return peerBus.get(path);
   },
 
@@ -155,38 +167,39 @@ export const BattleService = {
 
   async joinRoom(battleId, player) {
     const path = `battles/${battleId}`;
-    const room = peerBus.get(path);
+    const room = await this.getRoom(battleId);
     if (!room) throw new Error("Battle room not found");
 
     if (!room.players) room.players = {};
+    const existing = room.players[player.id];
     room.players[player.id] = {
       id: player.id,
       name: player.name,
       avatar: player.avatar || '🎯',
-      score: 0,
-      currentQuestionIndex: 0,
-      answers: {},
+      score: existing?.score || 0,
+      currentQuestionIndex: existing?.currentQuestionIndex || 0,
+      answers: existing?.answers || {},
       isReady: true,
-      finished: false,
-      streak: 0,
-      joinedAt: Date.now()
+      finished: existing?.finished || false,
+      streak: existing?.streak || 0,
+      joinedAt: existing?.joinedAt || Date.now()
     };
 
     peerBus.set(path, room);
     return room;
   },
 
-  async startBattle(battleId, startCountdownSeconds = 5) {
+  async startBattle(battleId, startCountdownSeconds = 4) {
     const path = `battles/${battleId}`;
-    const room = peerBus.get(path);
+    const room = await this.getRoom(battleId);
     if (!room) return;
 
     room.status = 'starting';
     room.startTime = Date.now() + (startCountdownSeconds * 1000);
     peerBus.set(path, room);
 
-    setTimeout(() => {
-      const activeRoom = peerBus.get(path);
+    setTimeout(async () => {
+      const activeRoom = await this.getRoom(battleId);
       if (activeRoom && activeRoom.status === 'starting') {
         activeRoom.status = 'active';
         peerBus.set(path, activeRoom);
@@ -196,10 +209,11 @@ export const BattleService = {
 
   async submitAnswer(battleId, playerId, questionIndex, selectedOption, isCorrect, pointsEarned, timeTakenSec) {
     const path = `battles/${battleId}`;
-    const room = peerBus.get(path);
+    const room = await this.getRoom(battleId);
     if (!room || !room.players || !room.players[playerId]) return;
 
     const p = room.players[playerId];
+    p.answers = p.answers || {};
     p.answers[questionIndex] = {
       selectedOption,
       isCorrect,
@@ -208,7 +222,7 @@ export const BattleService = {
       answeredAt: Date.now()
     };
 
-    p.score = Math.round(((p.score || 0) + pointsEarned) * 100) / 100;
+    p.score = Math.round(((Number(p.score) || 0) + pointsEarned) * 100) / 100;
     if (isCorrect) {
       p.streak = (p.streak || 0) + 1;
     } else {
@@ -216,7 +230,7 @@ export const BattleService = {
     }
     p.currentQuestionIndex = questionIndex + 1;
 
-    if (p.currentQuestionIndex >= room.questions.length) {
+    if (p.currentQuestionIndex >= (room.questions?.length || 10)) {
       p.finished = true;
       p.finishedAt = Date.now();
     }

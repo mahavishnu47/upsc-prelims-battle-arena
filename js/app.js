@@ -909,6 +909,7 @@ function renderLobbyView(params) {
 // 6. View: Live Battle Quiz Engine
 // ==========================================
 let battleUnsub = null;
+let startCountdownTimer = null;
 
 function renderBattleView(params) {
   const battleId = params.id;
@@ -918,6 +919,10 @@ function renderBattleView(params) {
   if (battleUnsub) {
     battleUnsub();
     battleUnsub = null;
+  }
+  if (startCountdownTimer) {
+    clearInterval(startCountdownTimer);
+    startCountdownTimer = null;
   }
 
   let localCurrentQIndex = 0;
@@ -961,15 +966,15 @@ function renderBattleView(params) {
   }
 
   function renderWaitingScreen(room) {
-    const playersList = Object.values(room?.players || {});
+    const playersList = Object.values(room?.players || {}).sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0));
     const pendingCount = playersList.filter(p => !p.finished).length;
 
     mainView.innerHTML = `
-      <div class="text-center glass-card" style="max-width: 520px; margin: 50px auto; padding: 40px 24px;">
+      <div class="text-center glass-card" style="max-width: 580px; margin: 40px auto; padding: 36px 24px;">
         <div style="font-size: 3.5rem; margin-bottom: 12px; animation: pulse-fire 1.5s infinite alternate;">⏳</div>
         <h2 class="gradient-gold" style="font-size: 1.8rem; margin-bottom: 8px;">Quiz Completed!</h2>
-        <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 24px;">
-          ${pendingCount > 0 ? `Waiting for ${pendingCount} friend(s) to finish their questions...` : `All players have finished! Calculating final scores...`}
+        <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 20px;">
+          ${pendingCount > 0 ? `Waiting for ${pendingCount} friend(s) to finish their questions...` : `All players have finished! Standings are finalized.`}
         </p>
 
         <div style="background: rgba(0,0,0,0.25); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px;">
@@ -979,21 +984,33 @@ function renderBattleView(params) {
           </div>
         </div>
 
-        <div id="waiting-players-list" style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
-          ${playersList.map(p => `
-            <div class="glass-panel" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 1.3rem;">${p.avatar || '🎯'}</span>
+        <!-- Live Opponent Statuses -->
+        <div style="margin-bottom: 24px; text-align: left;">
+          <h4 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; font-weight: 700;">Live Friend Standings:</h4>
+          <div id="waiting-players-list" style="display: flex; flex-direction: column; gap: 10px;">
+            ${playersList.map((p, idx) => `
+              <div class="glass-panel" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-left: 3px solid ${idx === 0 ? '#fbbf24' : idx === 1 ? '#94a3b8' : '#cd7f32'};">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-weight: 800; color: var(--text-muted); width: 24px;">#${idx + 1}</span>
+                  <span style="font-size: 1.3rem;">${p.avatar || '🎯'}</span>
+                  <div>
+                    <span style="font-weight: 700;">${p.name} ${p.id === user.id ? '<span style="color: var(--primary); font-size: 0.75rem;">(You)</span>' : ''}</span>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">${formatMarks(p.score)} marks</div>
+                  </div>
+                </div>
                 <div>
-                  <span style="font-weight: 600;">${p.name} ${p.id === user.id ? '(You)' : ''}</span>
-                  <div style="font-size: 0.75rem; color: var(--text-muted);">${formatMarks(p.score)} marks</div>
+                  ${p.finished ? '<span class="badge badge-emerald">Finished ✅</span>' : `<span class="badge badge-gold">Q ${(p.currentQuestionIndex || 0) + 1}/${room.questions?.length || 10}</span>`}
                 </div>
               </div>
-              <div>
-                ${p.finished ? '<span class="badge badge-emerald">Finished ✅</span>' : `<span class="badge badge-gold">Q ${(p.currentQuestionIndex || 0) + 1}/${room.questions?.length || 10}</span>`}
-              </div>
-            </div>
-          `).join('')}
+            `).join('')}
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <a href="#results/${battleId}" class="btn btn-primary btn-lg" style="font-weight: 800;">
+            🏆 View Battle Standings & Ranks Now
+          </a>
+          <a href="#dashboard" class="btn btn-glass">🏠 Dashboard</a>
         </div>
       </div>
     `;
@@ -1172,6 +1189,7 @@ ${currentQ.question}
     // If battle finished, redirect to results
     if (room.status === 'finished') {
       if (battleUnsub) { battleUnsub(); battleUnsub = null; }
+      if (startCountdownTimer) { clearInterval(startCountdownTimer); startCountdownTimer = null; }
       router.navigate(`#results/${battleId}`);
       return;
     }
@@ -1180,26 +1198,77 @@ ${currentQ.question}
     const playerList = Object.values(room.players || {});
     if (playerList.length > 0 && playerList.every(p => p.finished)) {
       if (battleUnsub) { battleUnsub(); battleUnsub = null; }
+      if (startCountdownTimer) { clearInterval(startCountdownTimer); startCountdownTimer = null; }
       router.navigate(`#results/${battleId}`);
       return;
     }
 
     // If still in countdown 'starting' state
     if (room.status === 'starting') {
-      const remainingSec = Math.max(1, Math.ceil((room.startTime - Date.now()) / 1000));
-      sounds.tick();
-      mainView.innerHTML = `
-        <div class="text-center glass-card" style="max-width: 440px; margin: 80px auto; padding: 50px 30px;">
-          <h3 style="color: var(--text-secondary); margin-bottom: 12px;">Get Ready! Battle Starts In</h3>
-          <div style="font-size: 5rem; font-weight: 900; color: #fbbf24; animation: pulse-fire 0.8s infinite alternate;">
-            ${remainingSec}
+      const countdownScreen = document.getElementById('starting-countdown-screen');
+      if (!countdownScreen) {
+        mainView.innerHTML = `
+          <div id="starting-countdown-screen" class="text-center glass-card" style="max-width: 440px; margin: 80px auto; padding: 50px 30px;">
+            <span class="badge badge-gold mb-2">Battle Starting</span>
+            <h3 style="color: var(--text-secondary); margin-bottom: 12px;">Get Ready! Battle Starts In</h3>
+            <div id="starting-countdown-num" style="font-size: 5.5rem; font-weight: 900; color: #fbbf24; animation: pulse-fire 0.8s infinite alternate; transition: transform 0.15s ease;">
+              4
+            </div>
+            <p style="color: var(--text-muted); margin-top: 14px; font-size: 0.9rem;">
+              +2.0 for Correct • -0.66 for Wrong (-1/3rd).<br>Move independently at your own pace!
+            </p>
           </div>
-          <p style="color: var(--text-muted); margin-top: 14px; font-size: 0.9rem;">
-            +2.0 for Correct • -0.66 for Wrong (-1/3rd). Move at your own pace!
-          </p>
-        </div>
-      `;
+        `;
+      }
+
+      if (!startCountdownTimer) {
+        let lastSec = -1;
+        const updateCountdown = () => {
+          const now = Date.now();
+          const targetTime = currentRoomCache?.startTime || (now + 4000);
+          const diffMs = targetTime - now;
+          const sec = Math.max(0, Math.ceil(diffMs / 1000));
+          const numEl = document.getElementById('starting-countdown-num');
+
+          if (sec !== lastSec) {
+            lastSec = sec;
+            if (numEl) {
+              if (sec > 0) {
+                numEl.innerText = sec;
+                numEl.style.transform = 'scale(1.25)';
+                setTimeout(() => { if (numEl) numEl.style.transform = 'scale(1)'; }, 150);
+                sounds.tick();
+              } else {
+                numEl.innerText = '⚔️ GO!';
+                numEl.style.color = '#34d399';
+                sounds.fanfare();
+              }
+            }
+          }
+
+          if (diffMs <= 0) {
+            if (startCountdownTimer) {
+              clearInterval(startCountdownTimer);
+              startCountdownTimer = null;
+            }
+            if (currentRoomCache) currentRoomCache.status = 'active';
+            if (!hasInitializedQuestion) {
+              hasInitializedQuestion = true;
+              renderCurrentQuestion();
+            }
+          }
+        };
+
+        updateCountdown();
+        startCountdownTimer = setInterval(updateCountdown, 250);
+      }
       return;
+    }
+
+    // If status is active, ensure countdown timer is stopped
+    if (startCountdownTimer) {
+      clearInterval(startCountdownTimer);
+      startCountdownTimer = null;
     }
 
     // If user has completed their questions, update waiting screen
@@ -1235,12 +1304,14 @@ async function renderResultsView(params) {
   sounds.fanfare();
 
   const players = Object.values(room.players || {}).sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0));
-  const myPlayer = room.players[user.id];
-  const myRank = players.findIndex(p => p.id === user.id) + 1;
+  const myPlayer = room.players ? room.players[user.id] : null;
+  const myRank = Math.max(1, players.findIndex(p => p.id === user.id) + 1);
   const isWinner = myRank === 1;
 
   // Record stats to LocalDB
-  SyllabusTracker.recordQuestionAttempts(user.id, room.questions, myPlayer?.answers || {});
+  if (room.questions && myPlayer) {
+    SyllabusTracker.recordQuestionAttempts(user.id, room.questions, myPlayer?.answers || {});
+  }
 
   // Calculate detailed marks breakdown
   let qCorrectCount = 0;
@@ -1271,7 +1342,7 @@ async function renderResultsView(params) {
   const stats = user.stats || {};
   stats.totalBattles = (stats.totalBattles || 0) + 1;
   if (isWinner) stats.battlesWon = (stats.battlesWon || 0) + 1;
-  stats.totalPoints = Math.round(((stats.totalPoints || 0) + (myPlayer?.score || netScore)) * 100) / 100;
+  stats.totalPoints = Math.round(((stats.totalPoints || 0) + (myPlayer?.score !== undefined ? myPlayer.score : netScore)) * 100) / 100;
   stats.questionsAttempted = (stats.questionsAttempted || 0) + qAttemptedCount;
   stats.questionsCorrect = (stats.questionsCorrect || 0) + qCorrectCount;
 
@@ -1286,7 +1357,7 @@ async function renderResultsView(params) {
     negativePenalty,
     correctCount: qCorrectCount,
     wrongCount,
-    totalQuestions: room.questions.length,
+    totalQuestions: room.questions?.length || 10,
     accuracy: accuracyPct,
     rank: myRank,
     opponents: players.map(p => ({ name: p.name, avatar: p.avatar, score: p.score }))
@@ -1299,7 +1370,7 @@ async function renderResultsView(params) {
     score: myPlayer?.score !== undefined ? myPlayer.score : netScore,
     rank: myRank,
     won: isWinner,
-    questionCount: room.questions.length
+    questionCount: room.questions?.length || 10
   });
 
   function formatScoreText(score) {
@@ -1316,7 +1387,7 @@ async function renderResultsView(params) {
           ${isWinner ? 'Victory is Yours!' : `Rank #${myRank} Finish`}
         </h2>
         <p style="color: var(--text-secondary); margin-top: 4px;">
-          ${room.subject} • ${room.questions.length} MCQs with Official UPSC Marking (+2.0 / -0.66)
+          ${room.subject} • ${room.questions?.length || 10} MCQs with Official UPSC Marking (+2.0 / -0.66)
         </p>
 
         <!-- Score Breakdown Badges -->
@@ -1326,7 +1397,7 @@ async function renderResultsView(params) {
           <span class="badge badge-gold">Net: ${formatScoreText(myPlayer?.score ?? netScore)} Marks (${accuracyPct}% Acc)</span>
         </div>
 
-        <!-- Podium Display for 3 Friends -->
+        <!-- Podium Display for Friends -->
         <div style="display: flex; justify-content: center; align-items: flex-end; gap: 16px; margin: 30px 0 10px 0;">
           ${players.slice(0, 3).map((p, idx) => {
             const rankOrder = idx === 0 ? '1st' : idx === 1 ? '2nd' : '3rd';
@@ -1346,7 +1417,52 @@ async function renderResultsView(params) {
           }).join('')}
         </div>
 
-        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px; flex-wrap: wrap;">
+        <!-- Full Battle Standings Table -->
+        <div style="margin-top: 30px; text-align: left;">
+          <h4 style="font-size: 1rem; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span>🎖️</span> Full Battle Standings & Scores
+          </h4>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            ${players.map((p, idx) => {
+              const isMe = p.id === user.id;
+              const pScore = Number(p.score || 0);
+              const pAnswers = p.answers || {};
+              const pCorrect = Object.values(pAnswers).filter(a => a.isCorrect).length;
+              const pTotal = Object.keys(pAnswers).length;
+              const pAcc = pTotal > 0 ? Math.round((pCorrect / pTotal) * 100) : 0;
+
+              return `
+                <div class="glass-panel" style="padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid ${idx === 0 ? '#fbbf24' : idx === 1 ? '#94a3b8' : idx === 2 ? '#cd7f32' : 'var(--border-subtle)'}; background: ${isMe ? 'rgba(99, 102, 241, 0.12)' : 'rgba(255, 255, 255, 0.03)'};">
+                  <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="font-weight: 900; font-size: 1.2rem; color: ${idx === 0 ? '#fbbf24' : idx === 1 ? '#94a3b8' : idx === 2 ? '#cd7f32' : 'var(--text-muted)'}; width: 28px;">
+                      #${idx + 1}
+                    </div>
+                    <div style="font-size: 1.8rem;">${p.avatar || '🎯'}</div>
+                    <div>
+                      <div style="font-weight: 800; font-size: 1.05rem;">
+                        ${p.name} ${isMe ? '<span class="badge badge-primary" style="font-size: 0.7rem; margin-left: 4px;">You</span>' : ''}
+                      </div>
+                      <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; gap: 10px; margin-top: 2px;">
+                        <span>✅ ${pCorrect}/${room.questions?.length || 10} Correct</span>
+                        <span>🎯 ${pAcc}% Acc</span>
+                        <span>${p.finished ? '🏁 Finished' : '⏳ In Progress'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="text-right">
+                    <div style="font-size: 1.4rem; font-weight: 900; color: ${pScore >= 0 ? '#34d399' : '#f87171'};">
+                      ${formatScoreText(pScore)}
+                    </div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">FINAL MARKS</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 28px; flex-wrap: wrap;">
           <a href="#create-battle" class="btn btn-primary btn-lg">⚔️ Play Rematch</a>
           <a href="#profile" class="btn btn-gold btn-lg">📊 View Marks History</a>
           <a href="#dashboard" class="btn btn-glass btn-lg">🏠 Arena Dashboard</a>
